@@ -1,76 +1,113 @@
-"""Main FastAPI application entry point."""
+"""FastAPI application main module."""
 
+import logging
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.responses import JSONResponse
 
 from app.core.config import settings
-from app.core.database import database
+from app.core.database import init_database, close_database
 from app.api.v1.router import api_router
+
+# Configure logging
+logging.basicConfig(
+    level=getattr(logging, settings.log_level),
+    format=settings.log_format
+)
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Application lifespan manager."""
+    """
+    Application lifespan manager.
+    
+    Handles startup and shutdown events for the FastAPI application.
+    """
     # Startup
-    await database.connect()
+    logger.info("Starting MoneyInOne API...")
+    try:
+        await init_database()
+        logger.info("Database initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {e}")
+        raise
+    
     yield
+    
     # Shutdown
-    await database.disconnect()
+    logger.info("Shutting down MoneyInOne API...")
+    try:
+        await close_database()
+        logger.info("Database connections closed")
+    except Exception as e:
+        logger.error(f"Error during shutdown: {e}")
 
 
-def create_application() -> FastAPI:
-    """Create and configure the FastAPI application."""
-    app = FastAPI(
-        title="MoneyInOne API",
-        description="Backend API service for MoneyInOne iOS financial bookkeeper app",
-        version="0.1.0",
-        docs_url="/api/docs" if settings.debug else None,
-        redoc_url="/api/redoc" if settings.debug else None,
-        openapi_url="/api/openapi.json" if settings.debug else None,
-        lifespan=lifespan,
+# Create FastAPI application
+app = FastAPI(
+    title=settings.app_name,
+    version=settings.app_version,
+    description="Backend API service for MoneyInOne financial asset tracker",
+    docs_url="/docs" if settings.debug else None,
+    redoc_url="/redoc" if settings.debug else None,
+    openapi_url="/openapi.json" if settings.debug else None,
+    lifespan=lifespan,
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.allowed_hosts,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# Global exception handler
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc: Exception) -> JSONResponse:
+    """Global exception handler for unhandled errors."""
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "Internal server error",
+            "details": str(exc) if settings.debug else "An unexpected error occurred"
+        }
     )
 
-    # Add middleware
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.allowed_hosts,
-        allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "DELETE"],
-        allow_headers=["*"],
-    )
 
-    app.add_middleware(
-        TrustedHostMiddleware,
-        allowed_hosts=settings.allowed_hosts,
-    )
-
-    # Include routers
-    app.include_router(api_router, prefix="/api/v1")
-
-    return app
+# Health check endpoint
+@app.get("/health", tags=["Health"])
+async def health_check():
+    """Health check endpoint."""
+    return {
+        "status": "healthy",
+        "app": settings.app_name,
+        "version": settings.app_version
+    }
 
 
-# Create the application instance
-app = create_application()
-
-
-@app.get("/health")
-async def health_check() -> dict[str, str]:
-    """Basic health check endpoint."""
-    return {"status": "healthy", "version": "0.1.0"}
+# Include API router
+app.include_router(
+    api_router,
+    prefix=settings.api_v1_prefix,
+    tags=["API v1"]
+)
 
 
 if __name__ == "__main__":
     import uvicorn
-
+    
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
         port=8000,
         reload=settings.debug,
-        log_level="info" if not settings.debug else "debug",
+        log_level=settings.log_level.lower()
     )

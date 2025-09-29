@@ -1,153 +1,150 @@
-"""Asset and AssetType models."""
+"""Asset-related models for financial tracking."""
 
+import uuid
 from decimal import Decimal
-from typing import Optional, Any, Dict
-from datetime import date
+from datetime import date, datetime
+from typing import List, Optional, Dict, Any, TYPE_CHECKING
 
-from sqlalchemy import String, Numeric, Date, Boolean, Text, ForeignKey, ARRAY
+from sqlalchemy import (
+    String, Numeric, Date, DateTime, Boolean, ForeignKey,
+    Index, UniqueConstraint, Text, ARRAY
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin, UUIDMixin
+from app.models.base import BaseModel
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 
-class AssetType(Base, UUIDMixin, TimestampMixin):
-    """Asset type definition with flexible attributes."""
+class AssetType(BaseModel):
+    """
+    Asset type definitions for categorization.
+    
+    Simple asset type model for basic categorization.
+    """
     
     __tablename__ = "asset_types"
     
     name: Mapped[str] = mapped_column(
         String(100),
         nullable=False,
-        doc="Display name of the asset type (e.g., 'Stock', 'Cryptocurrency')"
+        doc="Display name of the asset type"
     )
     
     category: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
         index=True,
-        doc="Category identifier (e.g., 'stock', 'crypto', 'bond', 'cash')"
+        doc="Category for grouping (cash, stock, crypto, etc.)"
     )
     
     is_default: Mapped[bool] = mapped_column(
         Boolean,
-        default=False,
+        default=True,
         nullable=False,
-        doc="Whether this is a default system asset type"
-    )
-    
-    attributes: Mapped[Optional[Dict[str, Any]]] = mapped_column(
-        JSONB,
-        nullable=True,
-        doc="Flexible schema for type-specific attributes and validation rules"
+        doc="Whether this is a system-provided default type"
     )
     
     # Relationships
-    assets: Mapped[list["Asset"]] = relationship(
+    assets: Mapped[List["Asset"]] = relationship(
         "Asset",
         back_populates="asset_type",
-        doc="Assets of this type"
+        lazy="select"
     )
     
     def __repr__(self) -> str:
-        """String representation of AssetType."""
-        return f"<AssetType(id={self.id}, name='{self.name}', category='{self.category}')>"
+        """String representation."""
+        return f"<AssetType(id={self.id}, name={self.name}, category={self.category})>"
 
 
-class Asset(Base, UUIDMixin, TimestampMixin):
-    """Individual asset owned by a user."""
+class Asset(BaseModel):
+    """
+    Simple asset records for financial tracking.
+    
+    Basic asset model focused on essential financial data.
+    """
     
     __tablename__ = "assets"
     
     # Foreign Keys
-    user_id: Mapped[UUIDMixin.id] = mapped_column(
+    user_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
-        doc="Reference to the owning user"
+        doc="Owner of this asset"
     )
     
-    asset_type_id: Mapped[UUIDMixin.id] = mapped_column(
+    asset_type_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("asset_types.id"),
         nullable=False,
         index=True,
-        doc="Reference to the asset type"
+        doc="Type of this asset"
     )
     
-    # Basic Asset Information
+    # Core Asset Information
     name: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
-        doc="Display name of the asset (e.g., 'Apple Inc.', 'Bitcoin')"
+        doc="User-friendly name of the asset"
     )
     
-    symbol: Mapped[Optional[str]] = mapped_column(
-        String(20),
-        nullable=True,
-        index=True,
-        doc="Trading symbol or ticker (e.g., 'AAPL', 'BTC')"
-    )
-    
-    # Quantity and Pricing
-    quantity: Mapped[Decimal] = mapped_column(
-        Numeric(20, 8),
+    category: Mapped[str] = mapped_column(
+        String(50),
         nullable=False,
-        doc="Quantity owned (supports up to 8 decimal places for crypto)"
+        index=True,
+        doc="Asset category (cash, stock, crypto, etc.)"
     )
     
-    purchase_price: Mapped[Decimal] = mapped_column(
+    # Financial Information
+    amount: Mapped[Decimal] = mapped_column(
         Numeric(15, 4),
         nullable=False,
-        doc="Original purchase price per unit"
+        doc="Total amount/value of the asset"
     )
     
-    purchase_currency: Mapped[str] = mapped_column(
+    currency: Mapped[str] = mapped_column(
         String(3),
         nullable=False,
-        doc="ISO 4217 currency code for purchase price"
+        doc="Currency of the asset (ISO code)"
     )
     
     purchase_date: Mapped[date] = mapped_column(
         Date,
         nullable=False,
         index=True,
-        doc="Date when the asset was purchased"
+        doc="Date of purchase/acquisition"
     )
     
-    # Flexible Attributes
-    attributes: Mapped[Optional[Dict[str, Any]]] = mapped_column(
-        JSONB,
+    # Optional Information
+    notes: Mapped[Optional[str]] = mapped_column(
+        String(500),
         nullable=True,
-        doc="Asset-specific data (shares, wallet_address, property_details, etc.)"
-    )
-    
-    tags: Mapped[Optional[list[str]]] = mapped_column(
-        ARRAY(Text),
-        nullable=True,
-        doc="Array of tags for organization and filtering"
+        doc="Optional notes about the asset"
     )
     
     # Relationships
     user: Mapped["User"] = relationship(
         "User",
         back_populates="assets",
-        doc="User who owns this asset"
+        lazy="select"
     )
     
     asset_type: Mapped["AssetType"] = relationship(
         "AssetType",
         back_populates="assets",
-        doc="Type definition for this asset"
+        lazy="select"
     )
     
-    @property
-    def total_cost(self) -> Decimal:
-        """Calculate total cost in original currency."""
-        return self.quantity * self.purchase_price
-    
     def __repr__(self) -> str:
-        """String representation of Asset."""
-        return (
-            f"<Asset(id={self.id}, name='{self.name}', "
-            f"symbol='{self.symbol}', quantity={self.quantity})>"
-        )
+        """String representation."""
+        return f"<Asset(id={self.id}, name={self.name}, category={self.category}, amount={self.amount})>"
+
+
+# # Create additional indexes for performance
+# Index('ix_assets_user_id', Asset.user_id)
+# Index('ix_assets_asset_type_id', Asset.asset_type_id)
+# Index('ix_assets_category', Asset.category)
+# Index('ix_assets_purchase_date', Asset.purchase_date)
+# Index('ix_asset_types_category', AssetType.category)

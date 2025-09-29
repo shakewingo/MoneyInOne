@@ -1,0 +1,480 @@
+<html><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>window.FontAwesomeConfig = { autoReplaceSvg: 'nest'};</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    
+    <style>::-webkit-scrollbar { display: none;}</style>
+    <script>tailwind.config = {
+  "theme": {
+    "extend": {
+      "fontFamily": {
+        "inter": [
+          "Inter",
+          "sans-serif"
+        ]
+      },
+      "colors": {
+        "primary": "#007BFF",
+        "secondary": "#1E40AF",
+        "success": "#28A745",
+        "danger": "#EF4444",
+        "warning": "#F59E0B",
+        "light": "#F8F9FA",
+        "gray": {
+          "50": "#F9FAFB",
+          "100": "#F3F4F6",
+          "200": "#E5E7EB",
+          "300": "#DCDCDC",
+          "400": "#9CA3AF",
+          "500": "#6B7280",
+          "600": "#4B5563",
+          "700": "#374151",
+          "800": "#1F2937",
+          "900": "#111827"
+        }
+      }
+    }
+  }
+};</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&amp;display=swap"><style>
+      body {
+        font-family: 'Inter', sans-serif !important;
+      }
+      
+      /* Preserve Font Awesome icons */
+      .fa, .fas, .far, .fal, .fab {
+        font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
+      }
+    </style><style>
+  .highlighted-section {
+    outline: 2px solid #3F20FB;
+    background-color: rgba(63, 32, 251, 0.1);
+  }
+
+  .edit-button {
+    position: absolute;
+    z-index: 1000;
+  }
+
+  ::-webkit-scrollbar {
+    display: none;
+  }
+
+  html, body {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Mobile Styles */
+  @media (max-width: 768px) {
+    .sidebar-mobile {
+      transform: translateX(-100%);
+      transition: transform 0.3s ease-in-out;
+    }
+    
+    .sidebar-mobile.open {
+      transform: translateX(0);
+    }
+    
+    .mobile-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 30;
+    }
+    
+    .mobile-overlay.active {
+      display: block;
+    }
+    
+    .main-content-mobile {
+      margin-left: 0 !important;
+    }
+  }
+  </style></head>
+<body class="bg-light font-custom">
+    <!-- Mobile Overlay -->
+    <div id="mobile-overlay" class="mobile-overlay" onclick="closeMobileMenu()"></div>
+    <div id="dashboard-container" class="min-h-screen">
+        <aside id="sidebar" class="fixed left-0 top-0 w-64 h-full bg-white border-r border-gray-300 z-40 sidebar-mobile md:translate-x-0">
+            <div class="p-6">
+                <div class="flex items-center space-x-3 mb-8">
+                    <div class="w-10 h-10 bg-gradient-to-r from-primary to-secondary rounded-lg flex items-center justify-center">
+                        <i class="fa-solid fa-coins text-white text-lg"></i>
+                    </div>
+                    <span class="text-xl font-bold text-gray-900">MoneyInOne</span>
+                </div>
+                
+                <nav class="space-y-2">
+                    <span class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer">
+                        <i class="fa-solid fa-chart-line"></i>
+                        <span class="font-medium">Dashboard</span>
+                    </span>
+                    <span class="flex items-center space-x-3 px-4 py-3 rounded-lg bg-primary text-white cursor-pointer">
+                        <i class="fa-solid fa-wallet"></i>
+                        <span class="font-medium">Assets</span>
+                    </span>
+                    <span class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer">
+                        <i class="fa-solid fa-credit-card"></i>
+                        <span class="font-medium">Credit</span>
+                    </span>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Mobile Menu Button -->
+        <button id="mobile-menu-btn" class="fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-md md:hidden" onclick="toggleMobileMenu()">
+            <i class="fa-solid fa-bars text-gray-600"></i>
+        </button>
+
+        <main id="main-content" class="ml-64 main-content-mobile md:ml-64">
+            <header id="header" class="bg-white border-b border-gray-300 px-4 md:px-8 py-4 md:py-6">
+                <div class="flex items-center justify-between ml-12 md:ml-0">
+                    <div>
+                        <h1 class="text-xl md:text-2xl font-bold text-gray-900">Asset &amp; Credit Records</h1>
+                        <p class="text-gray-500 mt-1">Manage your portfolio assets and credit records</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button id="add-asset-btn" class="flex items-center space-x-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 transition-colors">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Add Asset</span>
+                        </button>
+                        <div class="w-8 h-8 rounded-full bg-gray-300 overflow-hidden">
+                            <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-3.jpg" alt="Profile" class="w-full h-full object-cover">
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div id="records-content" class="p-4 md:p-8">
+                <div id="cash-section" class="mb-8">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
+                                <i class="fa-solid fa-dollar-sign text-success"></i>
+                            </div>
+                            <h2 class="text-xl font-semibold text-gray-900">Cash Assets</h2>
+                            <span class="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">3 records</span>
+                        </div>
+                    </div>
+                    
+                    <div id="cash-records" class="grid gap-4">
+                        <div id="cash-record-1" class="bg-white p-4 rounded-lg border border-gray-300 hover:shadow-md transition-shadow">
+                            <div class="flex items-center justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-3 mb-2">
+                                        <span class="font-medium text-gray-900">USD Savings Account</span>
+                                        <span class="px-2 py-1 bg-success/10 text-success text-xs rounded-full">USD</span>
+                                    </div>
+                                    <p class="text-2xl font-bold text-gray-900">$25,480.00</p>
+                                    <p class="text-sm text-gray-500">Purchased: Jan 15, 2024</p>
+                                    <p class="text-sm text-gray-400">Updated: Dec 15, 2024</p>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <button class="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors">
+                                        <i class="fa-solid fa-edit"></i>
+                                    </button>
+                                    <button class="p-2 text-danger hover:bg-red-50 rounded-lg transition-colors">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="cash-record-2" class="bg-white p-4 rounded-lg border border-gray-300 hover:shadow-md transition-shadow">
+                            <div class="flex items-center justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-3 mb-2">
+                                        <span class="font-medium text-gray-900">EUR Emergency Fund</span>
+                                        <span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">EUR</span>
+                                    </div>
+                                    <p class="text-2xl font-bold text-gray-900">€8,750.00</p>
+                                    <p class="text-sm text-gray-500">Purchased: Mar 20, 2024</p>
+                                    <p class="text-sm text-gray-400">Updated: Dec 14, 2024</p>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <button class="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors">
+                                        <i class="fa-solid fa-edit"></i>
+                                    </button>
+                                    <button class="p-2 text-danger hover:bg-red-50 rounded-lg transition-colors">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="stocks-section" class="mb-8">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                                <i class="fa-solid fa-chart-line text-primary"></i>
+                            </div>
+                            <h2 class="text-xl font-semibold text-gray-900">Stock Holdings</h2>
+                            <span class="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">4 records</span>
+                        </div>
+                    </div>
+                    
+                    <div id="stock-records" class="grid gap-4">
+                        <div id="stock-record-1" class="bg-white p-4 rounded-lg border border-gray-300 hover:shadow-md transition-shadow">
+                            <div class="flex items-center justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-3 mb-2">
+                                        <span class="font-medium text-gray-900">Apple Inc. (AAPL)</span>
+                                        <span class="px-2 py-1 bg-success/10 text-success text-xs rounded-full">USD</span>
+                                        <span class="text-sm text-gray-500">150 shares</span>
+                                    </div>
+                                    <p class="text-2xl font-bold text-gray-900">$28,950.00</p>
+                                    <p class="text-sm text-gray-500">Purchased: Jan 15, 2024</p>
+                                    <p class="text-sm text-gray-400">Updated: Dec 15, 2024</p>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <button class="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors">
+                                        <i class="fa-solid fa-edit"></i>
+                                    </button>
+                                    <button class="p-2 text-danger hover:bg-red-50 rounded-lg transition-colors">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="stock-record-2" class="bg-white p-4 rounded-lg border border-gray-300 hover:shadow-md transition-shadow">
+                            <div class="flex items-center justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-3 mb-2">
+                                        <span class="font-medium text-gray-900">Tesla Inc. (TSLA)</span>
+                                        <span class="px-2 py-1 bg-success/10 text-success text-xs rounded-full">USD</span>
+                                        <span class="text-sm text-gray-500">75 shares</span>
+                                    </div>
+                                    <p class="text-2xl font-bold text-gray-900">$18,225.00</p>
+                                    <p class="text-sm text-gray-500">Purchased: Mar 22, 2024</p>
+                                    <p class="text-sm text-gray-400">Updated: Dec 14, 2024</p>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <button class="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors">
+                                        <i class="fa-solid fa-edit"></i>
+                                    </button>
+                                    <button class="p-2 text-danger hover:bg-red-50 rounded-lg transition-colors">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="crypto-section" class="mb-8">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-warning/10 rounded-lg flex items-center justify-center">
+                                <i class="fa-brands fa-bitcoin text-warning"></i>
+                            </div>
+                            <h2 class="text-xl font-semibold text-gray-900">Cryptocurrency</h2>
+                            <span class="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">2 records</span>
+                        </div>
+                    </div>
+                    
+                    <div id="crypto-records" class="grid gap-4">
+                        <div id="crypto-record-1" class="bg-white p-4 rounded-lg border border-gray-300 hover:shadow-md transition-shadow">
+                            <div class="flex items-center justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-3 mb-2">
+                                        <span class="font-medium text-gray-900">Bitcoin (BTC)</span>
+                                        <span class="px-2 py-1 bg-success/10 text-success text-xs rounded-full">USD</span>
+                                        <span class="text-sm text-gray-500">0.5 BTC</span>
+                                    </div>
+                                    <p class="text-2xl font-bold text-gray-900">$21,500.00</p>
+                                    <p class="text-sm text-gray-500">Purchased: Jun 10, 2024</p>
+                                    <p class="text-sm text-gray-400">Updated: Dec 13, 2024</p>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <button class="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors">
+                                        <i class="fa-solid fa-edit"></i>
+                                    </button>
+                                    <button class="p-2 text-danger hover:bg-red-50 rounded-lg transition-colors">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="real-estate-section" class="mb-8">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                <i class="fa-solid fa-home text-purple-600"></i>
+                            </div>
+                            <h2 class="text-xl font-semibold text-gray-900">Real Estate</h2>
+                            <span class="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">1 record</span>
+                        </div>
+                    </div>
+                    
+                    <div id="real-estate-records" class="grid gap-4">
+                        <div id="real-estate-record-1" class="bg-white p-4 rounded-lg border border-gray-300 hover:shadow-md transition-shadow">
+                            <div class="flex items-center justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-3 mb-2">
+                                        <span class="font-medium text-gray-900">Downtown Apartment</span>
+                                        <span class="px-2 py-1 bg-success/10 text-success text-xs rounded-full">USD</span>
+                                    </div>
+                                    <p class="text-2xl font-bold text-gray-900">$485,000.00</p>
+                                    <p class="text-sm text-gray-500">Purchased: Aug 05, 2023</p>
+                                    <p class="text-sm text-gray-400">Updated: Dec 10, 2024</p>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <button class="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors">
+                                        <i class="fa-solid fa-edit"></i>
+                                    </button>
+                                    <button class="p-2 text-danger hover:bg-red-50 rounded-lg transition-colors">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-xl p-8 max-w-md w-full mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-semibold text-gray-900">Edit Asset</h3>
+                <button id="close-modal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="edit-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Asset Name</label>
+                    <input type="text" id="edit-name" class="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Current Value</label>
+                    <input type="number" id="edit-value" step="0.01" class="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                </div>
+                
+                <div class="flex items-center justify-end space-x-4 pt-6">
+                    <button type="button" id="cancel-edit" class="px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-6 py-2 text-white bg-primary rounded-lg hover:bg-blue-600">
+                        Update Asset
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const editButtons = document.querySelectorAll('.fa-edit');
+        const deleteButtons = document.querySelectorAll('.fa-trash');
+        const editModal = document.getElementById('edit-modal');
+        const closeModal = document.getElementById('close-modal');
+        const cancelEdit = document.getElementById('cancel-edit');
+
+        editButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                // Extract asset info from the record
+                const record = button.closest('[id*="record"]');
+                const assetNameElement = record.querySelector('.font-medium');
+                const assetValueElement = record.querySelector('.text-2xl');
+                const purchaseDateElement = record.querySelector('.text-gray-500');
+                
+                const assetName = assetNameElement.textContent;
+                const assetValue = assetValueElement.textContent;
+                const purchaseDate = purchaseDateElement.textContent.replace('Purchased: ', '');
+                
+                // Create URL parameters
+                const params = new URLSearchParams({
+                    name: assetName,
+                    value: assetValue,
+                    date: purchaseDate
+                });
+                
+                // Redirect to edit form with asset information
+                window.location.href = `edit_form.html?${params.toString()}`;
+            });
+        });
+
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                // Extract asset info from the record
+                const record = button.closest('[id*="record"]');
+                const assetName = record.querySelector('.font-medium').textContent;
+                const assetId = assetName.replace(/\s+/g, '_').replace(/[^\w_]/g, '');
+                
+                // Redirect to delete page with asset information
+                window.location.href = `delete_asset.html?asset=${assetId}&name=${encodeURIComponent(assetName)}`;
+            });
+        });
+
+        closeModal.addEventListener('click', function() {
+            editModal.classList.add('hidden');
+        });
+
+        cancelEdit.addEventListener('click', function() {
+            editModal.classList.add('hidden');
+        });
+
+        document.getElementById('edit-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            editModal.classList.add('hidden');
+            alert('Asset updated successfully!');
+        });
+
+        // Handle Add Asset button
+        document.getElementById('add-asset-btn').addEventListener('click', function() {
+            window.location.href = 'add_form.html';
+        });
+
+        // Mobile menu functionality
+        function toggleMobileMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            const menuBtn = document.getElementById('mobile-menu-btn');
+            
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+            
+            const icon = menuBtn.querySelector('i');
+            if (sidebar.classList.contains('open')) {
+                icon.className = 'fa-solid fa-times text-gray-600';
+            } else {
+                icon.className = 'fa-solid fa-bars text-gray-600';
+            }
+        }
+        
+        function closeMobileMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            const menuBtn = document.getElementById('mobile-menu-btn');
+            const icon = menuBtn.querySelector('i');
+            
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+            icon.className = 'fa-solid fa-bars text-gray-600';
+        }
+        
+        document.querySelectorAll('#sidebar nav span').forEach(item => {
+            item.addEventListener('click', closeMobileMenu);
+        });
+        
+        window.addEventListener('resize', function() {
+            if (window.innerWidth >= 768) {
+                closeMobileMenu();
+            }
+        });
+    </script>
+
+</body></html>

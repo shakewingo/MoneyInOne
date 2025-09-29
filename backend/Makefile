@@ -14,7 +14,6 @@ help:
 	@echo "  docker-build Build Docker image"
 	@echo "  docker-up   Start Docker services"
 	@echo "  docker-down Stop Docker services"
-	@echo "  migrate     Run database migrations"
 
 # Development setup
 install:
@@ -59,16 +58,6 @@ docker-down:
 
 docker-logs:
 	docker-compose logs -f
-
-# Database commands
-migrate:
-	alembic upgrade head
-
-migrate-create:
-	alembic revision --autogenerate -m "$(MESSAGE)"
-
-migrate-downgrade:
-	alembic downgrade -1
 
 # Development helpers
 shell:

@@ -1,13 +1,12 @@
 """Database models package."""
 
-from app.models.asset import Asset, AssetType
+from app.models.base import Base
 from app.models.user import User
-from app.models.price import AssetPrice, ExchangeRate
+from app.models.asset import Asset, AssetType
 
 __all__ = [
+    "Base",
     "User",
-    "Asset", 
+    "Asset",
     "AssetType",
-    "AssetPrice",
-    "ExchangeRate",
 ]

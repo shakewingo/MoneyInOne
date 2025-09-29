@@ -14,7 +14,6 @@ dependencies = [
     "fastapi>=0.104.0",
     "uvicorn[standard]>=0.24.0",
     "sqlalchemy>=2.0.0",
-    "alembic>=1.13.0",
     "psycopg2-binary>=2.9.0",
     "pydantic>=2.5.0",
     "pydantic-settings>=2.1.0",
@@ -31,6 +30,7 @@ dev = [
     "black>=23.0.0",
     "ruff>=0.1.0",
     "python-json-logger>=2.0.0",
+    "aiosqlite>=0.21.0",
 ]
 
 [tool.black]
@@ -66,5 +66,6 @@ testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "-v --cov=app --cov-report=html --cov-report=term-missing"
+addopts = "-v"
 asyncio_mode = "auto"
+pythonpath = ["."]

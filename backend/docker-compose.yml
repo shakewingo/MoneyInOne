@@ -4,7 +4,8 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://moneyinone:password@db:5432/moneyinone
+      # - DATABASE_URL=sqlite+aiosqlite:///./moneyinone.db
+      - DATABASE_URL=postgresql+asyncpg://moneyinone:password@db:5432/moneyinone
       - REDIS_URL=redis://redis:6379/0
       - DEBUG=True
     depends_on:

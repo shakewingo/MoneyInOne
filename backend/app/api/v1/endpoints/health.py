@@ -1,71 +1,56 @@
 """Health check endpoints."""
 
+import logging
 from datetime import datetime
-from typing import Dict, Any
-
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
 
-from app.core.config import settings
 from app.core.database import get_db_session
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
 @router.get("/")
-async def basic_health_check() -> Dict[str, Any]:
+async def health_check():
     """Basic health check endpoint."""
     return {
         "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
-        "version": "0.1.0",
-        "service": "MoneyInOne API",
+        "timestamp": datetime.now(datetime.timezone.utc).isoformat(),  # Convert to ISO string
+        "service": "MoneyInOne API"
     }
 
 
 @router.get("/detailed")
-async def detailed_health_check(
-    db: AsyncSession = Depends(get_db_session),
-) -> Dict[str, Any]:
+async def detailed_health_check(db: AsyncSession = Depends(get_db_session)):
     """Detailed health check including database connectivity."""
     health_status = {
         "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
-        "version": "0.1.0",
+        "timestamp": datetime.utcnow().isoformat(),  # Convert to ISO string
         "service": "MoneyInOne API",
-        "checks": {},
+        "checks": {}
     }
-
+    
     # Database connectivity check
     try:
-        result = await db.execute("SELECT 1 as health_check")
-        row = result.fetchone()
-        if row and row[0] == 1:
-            health_status["checks"]["database"] = {
-                "status": "healthy",
-                "message": "Database connection successful",
-            }
-        else:
-            health_status["checks"]["database"] = {
-                "status": "unhealthy",
-                "message": "Database query returned unexpected result",
-            }
-            health_status["status"] = "unhealthy"
+        result = await db.execute(text("SELECT 1"))
+        result.fetchone()  # Remove await - fetchone() is not async
+        health_status["checks"]["database"] = {
+            "status": "healthy",
+            "message": "Database connection successful"
+        }
     except Exception as e:
+        logger.error(f"Database health check failed: {e}")
+        health_status["status"] = "unhealthy"
         health_status["checks"]["database"] = {
             "status": "unhealthy",
-            "message": f"Database connection failed: {str(e)}",
+            "message": f"Database connection failed: {str(e)}"
         }
-        health_status["status"] = "unhealthy"
-
-    # Configuration check
-    health_status["checks"]["configuration"] = {
-        "status": "healthy",
-        "debug_mode": settings.debug,
-        "api_version": settings.api_version,
-    }
-
+    
+    # If any check fails, return 503
     if health_status["status"] == "unhealthy":
         raise HTTPException(status_code=503, detail=health_status)
-
+    
     return health_status

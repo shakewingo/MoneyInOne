@@ -1,193 +1,320 @@
-"""Test database models."""
+"""Test database models for simplified finance app."""
 
 import pytest
-from datetime import date, datetime
+import uuid
 from decimal import Decimal
-from uuid import uuid4
+from datetime import date, datetime
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
 from app.models.asset import Asset, AssetType
-from app.models.price import AssetPrice, ExchangeRate
 
 
-class TestUserModel:
-    """Test User model."""
+@pytest.mark.asyncio
+async def test_user_model(test_session: AsyncSession):
+    """Test User model basic operations."""
+    # Create user
+    user = User(device_id="test-device-123")
+    test_session.add(user)
+    await test_session.commit()
+    await test_session.refresh(user)
     
-    def test_user_creation(self):
-        """Test creating a user instance."""
-        user = User(device_id="test-device-123")
-        
-        assert user.device_id == "test-device-123"
-    
-    def test_user_repr(self):
-        """Test user string representation."""
-        user = User(device_id="test-device-123")
-        repr_str = repr(user)
-        
-        assert "User" in repr_str
-        assert "test-device-123" in repr_str
+    # Test user attributes
+    assert user.id is not None
+    assert user.device_id == "test-device-123"
+    assert user.created_at is not None
+    assert user.updated_at is not None
+    assert isinstance(user.id, uuid.UUID)
 
 
-class TestAssetTypeModel:
-    """Test AssetType model."""
+@pytest.mark.asyncio
+async def test_asset_type_model(test_session: AsyncSession):
+    """Test AssetType model basic operations."""
+    # Create asset type
+    asset_type = AssetType(
+        name="Cash",
+        category="cash",
+        is_default=True
+    )
+    test_session.add(asset_type)
+    await test_session.commit()
+    await test_session.refresh(asset_type)
     
-    def test_asset_type_creation(self):
-        """Test creating an asset type instance."""
-        asset_type = AssetType(
-            name="Stock",
-            category="stock",
-            is_default=True,
-            attributes={"required_fields": ["symbol"]}
-        )
-        
-        assert asset_type.name == "Stock"
-        assert asset_type.category == "stock"
-        assert asset_type.is_default is True
-        assert asset_type.attributes == {"required_fields": ["symbol"]}
-    
-    def test_asset_type_repr(self):
-        """Test asset type string representation."""
-        asset_type = AssetType(name="Stock", category="stock")
-        repr_str = repr(asset_type)
-        
-        assert "AssetType" in repr_str
-        assert "Stock" in repr_str
-        assert "stock" in repr_str
+    # Test asset type attributes
+    assert asset_type.id is not None
+    assert asset_type.name == "Cash"
+    assert asset_type.category == "cash"
+    assert asset_type.is_default is True
+    assert asset_type.created_at is not None
+    assert asset_type.updated_at is not None
 
 
-class TestAssetModel:
-    """Test Asset model."""
+@pytest.mark.asyncio
+async def test_asset_model(test_session: AsyncSession):
+    """Test Asset model basic operations."""
+    # Create user and asset type first
+    user = User(device_id="test-device-456")
+    test_session.add(user)
     
-    def test_asset_creation(self):
-        """Test creating an asset instance."""
-        user_id = uuid4()
-        asset_type_id = uuid4()
-        
-        asset = Asset(
-            user_id=user_id,
-            asset_type_id=asset_type_id,
-            name="Apple Inc.",
-            symbol="AAPL",
-            quantity=Decimal("10.0"),
-            purchase_price=Decimal("150.00"),
-            purchase_currency="USD",
-            purchase_date=date(2024, 1, 15),
-            attributes={"shares": 10},
-            tags=["tech", "dividend"]
-        )
-        
-        assert asset.name == "Apple Inc."
-        assert asset.symbol == "AAPL"
-        assert asset.quantity == Decimal("10.0")
-        assert asset.purchase_price == Decimal("150.00")
-        assert asset.purchase_currency == "USD"
-        assert asset.purchase_date == date(2024, 1, 15)
-        assert asset.attributes == {"shares": 10}
-        assert asset.tags == ["tech", "dividend"]
+    asset_type = AssetType(
+        name="Stock",
+        category="stock",
+        is_default=True
+    )
+    test_session.add(asset_type)
+    await test_session.commit()
+    await test_session.refresh(user)
+    await test_session.refresh(asset_type)
     
-    def test_total_cost_calculation(self):
-        """Test total cost property calculation."""
-        asset = Asset(
-            user_id=uuid4(),
-            asset_type_id=uuid4(),
-            name="Test Asset",
-            quantity=Decimal("5.0"),
-            purchase_price=Decimal("100.00"),
-            purchase_currency="USD",
-            purchase_date=date.today()
-        )
-        
-        assert asset.total_cost == Decimal("500.00")
+    # Create asset
+    asset = Asset(
+        user_id=user.id,
+        asset_type_id=asset_type.id,
+        name="Apple Inc.",
+        category="stock",
+        amount=Decimal("15000.00"),
+        currency="USD",
+        purchase_date=date(2024, 1, 15),
+        notes="Technology stock investment"
+    )
+    test_session.add(asset)
+    await test_session.commit()
+    await test_session.refresh(asset)
     
-    def test_asset_repr(self):
-        """Test asset string representation."""
-        asset = Asset(
-            user_id=uuid4(),
-            asset_type_id=uuid4(),
-            name="Apple Inc.",
-            symbol="AAPL",
-            quantity=Decimal("10.0"),
-            purchase_price=Decimal("150.00"),
-            purchase_currency="USD",
-            purchase_date=date.today()
-        )
-        repr_str = repr(asset)
-        
-        assert "Asset" in repr_str
-        assert "Apple Inc." in repr_str
-        assert "AAPL" in repr_str
-        assert "10.0" in repr_str
+    # Test asset attributes
+    assert asset.id is not None
+    assert asset.user_id == user.id
+    assert asset.asset_type_id == asset_type.id
+    assert asset.name == "Apple Inc."
+    assert asset.category == "stock"
+    assert asset.amount == Decimal("15000.00")
+    assert asset.currency == "USD"
+    assert asset.purchase_date == date(2024, 1, 15)
+    assert asset.notes == "Technology stock investment"
+    assert asset.created_at is not None
+    assert asset.updated_at is not None
 
 
-class TestAssetPriceModel:
-    """Test AssetPrice model."""
+@pytest.mark.asyncio
+async def test_asset_relationships(test_session: AsyncSession):
+    """Test relationships between models."""
+    # Create user and asset type
+    user = User(device_id="test-device-relationships")
+    test_session.add(user)
     
-    def test_asset_price_creation(self):
-        """Test creating an asset price instance."""
-        price = AssetPrice(
-            symbol="AAPL",
-            asset_type="stock",
-            price=Decimal("180.00"),
+    asset_type = AssetType(
+        name="Cryptocurrency",
+        category="crypto",
+        is_default=True
+    )
+    test_session.add(asset_type)
+    await test_session.commit()
+    await test_session.refresh(user)
+    await test_session.refresh(asset_type)
+    
+    # Create multiple assets
+    assets = [
+        Asset(
+            user_id=user.id,
+            asset_type_id=asset_type.id,
+            name="Bitcoin",
+            category="crypto",
+            amount=Decimal("50000.00"),
             currency="USD",
-            source="yahoo_finance",
-            change_24h=Decimal("2.5"),
-            fetched_at=datetime.utcnow()
-        )
-        
-        assert price.symbol == "AAPL"
-        assert price.asset_type == "stock"
-        assert price.price == Decimal("180.00")
-        assert price.currency == "USD"
-        assert price.source == "yahoo_finance"
-        assert price.change_24h == Decimal("2.5")
-    
-    def test_asset_price_repr(self):
-        """Test asset price string representation."""
-        price = AssetPrice(
-            symbol="AAPL",
-            asset_type="stock",
-            price=Decimal("180.00"),
+            purchase_date=date(2024, 1, 1)
+        ),
+        Asset(
+            user_id=user.id,
+            asset_type_id=asset_type.id,
+            name="Ethereum",
+            category="crypto",
+            amount=Decimal("30000.00"),
             currency="USD",
-            source="yahoo_finance",
-            fetched_at=datetime.utcnow()
+            purchase_date=date(2024, 1, 15)
         )
-        repr_str = repr(price)
-        
-        assert "AssetPrice" in repr_str
-        assert "AAPL" in repr_str
-        assert "180.00" in repr_str
-        assert "USD" in repr_str
+    ]
+    
+    for asset in assets:
+        test_session.add(asset)
+    await test_session.commit()
+    
+    # Test user -> assets relationship
+    await test_session.refresh(user, ["assets"])
+    assert len(user.assets) == 2
+    asset_names = {asset.name for asset in user.assets}
+    assert asset_names == {"Bitcoin", "Ethereum"}
+    
+    # Test asset_type -> assets relationship
+    await test_session.refresh(asset_type, ["assets"])
+    assert len(asset_type.assets) == 2
 
 
-class TestExchangeRateModel:
-    """Test ExchangeRate model."""
+@pytest.mark.asyncio
+async def test_asset_validation(test_session: AsyncSession):
+    """Test asset model validation."""
+    # Create user and asset type
+    user = User(device_id="test-device-validation")
+    test_session.add(user)
     
-    def test_exchange_rate_creation(self):
-        """Test creating an exchange rate instance."""
-        rate = ExchangeRate(
-            from_currency="USD",
-            to_currency="CNY",
-            rate=Decimal("7.20"),
-            source="exchangerate-api",
-            fetched_at=datetime.utcnow()
-        )
-        
-        assert rate.from_currency == "USD"
-        assert rate.to_currency == "CNY"
-        assert rate.rate == Decimal("7.20")
-        assert rate.source == "exchangerate-api"
+    asset_type = AssetType(
+        name="Cash",
+        category="cash",
+        is_default=True
+    )
+    test_session.add(asset_type)
+    await test_session.commit()
+    await test_session.refresh(user)
+    await test_session.refresh(asset_type)
     
-    def test_exchange_rate_repr(self):
-        """Test exchange rate string representation."""
-        rate = ExchangeRate(
-            from_currency="USD",
-            to_currency="CNY",
-            rate=Decimal("7.20"),
-            source="exchangerate-api",
-            fetched_at=datetime.utcnow()
-        )
-        repr_str = repr(rate)
-        
-        assert "ExchangeRate" in repr_str
-        assert "USD/CNY" in repr_str
-        assert "7.20" in repr_str
+    # Test valid asset
+    valid_asset = Asset(
+        user_id=user.id,
+        asset_type_id=asset_type.id,
+        name="Savings Account",
+        category="cash",
+        amount=Decimal("1000.00"),
+        currency="USD",
+        purchase_date=date(2024, 1, 1)
+    )
+    test_session.add(valid_asset)
+    await test_session.commit()
+    await test_session.refresh(valid_asset)
+    
+    assert valid_asset.id is not None
+
+
+@pytest.mark.asyncio
+async def test_multiple_users_assets(test_session: AsyncSession):
+    """Test that assets are properly isolated by user."""
+    # Create two users
+    user1 = User(device_id="test-device-user1")
+    user2 = User(device_id="test-device-user2")
+    test_session.add(user1)
+    test_session.add(user2)
+    
+    # Create asset type
+    asset_type = AssetType(
+        name="Cash",
+        category="cash",
+        is_default=True
+    )
+    test_session.add(asset_type)
+    await test_session.commit()
+    await test_session.refresh(user1)
+    await test_session.refresh(user2)
+    await test_session.refresh(asset_type)
+    
+    # Create assets for each user
+    asset1 = Asset(
+        user_id=user1.id,
+        asset_type_id=asset_type.id,
+        name="User 1 Cash",
+        category="cash",
+        amount=Decimal("1000.00"),
+        currency="USD",
+        purchase_date=date(2024, 1, 1)
+    )
+    
+    asset2 = Asset(
+        user_id=user2.id,
+        asset_type_id=asset_type.id,
+        name="User 2 Cash",
+        category="cash",
+        amount=Decimal("2000.00"),
+        currency="EUR",
+        purchase_date=date(2024, 1, 1)
+    )
+    
+    test_session.add(asset1)
+    test_session.add(asset2)
+    await test_session.commit()
+    
+    # Test user isolation
+    await test_session.refresh(user1, ["assets"])
+    await test_session.refresh(user2, ["assets"])
+    
+    assert len(user1.assets) == 1
+    assert len(user2.assets) == 1
+    assert user1.assets[0].name == "User 1 Cash"
+    assert user2.assets[0].name == "User 2 Cash"
+    assert user1.assets[0].currency == "USD"
+    assert user2.assets[0].currency == "EUR"
+
+
+@pytest.mark.asyncio
+async def test_asset_string_representation(test_session: AsyncSession):
+    """Test string representation of models."""
+    # Create user and asset type
+    user = User(device_id="test-device-repr")
+    test_session.add(user)
+    
+    asset_type = AssetType(
+        name="Real Estate",
+        category="real_estate",
+        is_default=True
+    )
+    test_session.add(asset_type)
+    await test_session.commit()
+    await test_session.refresh(user)
+    await test_session.refresh(asset_type)
+    
+    # Create asset
+    asset = Asset(
+        user_id=user.id,
+        asset_type_id=asset_type.id,
+        name="Family Home",
+        category="real_estate",
+        amount=Decimal("500000.00"),
+        currency="USD",
+        purchase_date=date(2024, 1, 1)
+    )
+    test_session.add(asset)
+    await test_session.commit()
+    await test_session.refresh(asset)
+    
+    # Test string representations
+    assert "AssetType" in str(asset_type)
+    assert "Real Estate" in str(asset_type)
+    assert "real_estate" in str(asset_type)
+    
+    assert "Asset" in str(asset)
+    assert "Family Home" in str(asset)
+    assert "real_estate" in str(asset)
+    assert "500000.00" in str(asset)
+
+
+@pytest.mark.asyncio
+async def test_decimal_precision(test_session: AsyncSession):
+    """Test decimal precision for financial amounts."""
+    # Create user and asset type
+    user = User(device_id="test-device-decimal")
+    test_session.add(user)
+    
+    asset_type = AssetType(
+        name="Cash",
+        category="cash",
+        is_default=True
+    )
+    test_session.add(asset_type)
+    await test_session.commit()
+    await test_session.refresh(user)
+    await test_session.refresh(asset_type)
+    
+    # Create asset with precise decimal amount
+    precise_amount = Decimal("1234.5678")
+    asset = Asset(
+        user_id=user.id,
+        asset_type_id=asset_type.id,
+        name="Precise Cash",
+        category="cash",
+        amount=precise_amount,
+        currency="USD",
+        purchase_date=date(2024, 1, 1)
+    )
+    test_session.add(asset)
+    await test_session.commit()
+    await test_session.refresh(asset)
+    
+    # Test precision is maintained
+    assert asset.amount == precise_amount
+    assert str(asset.amount) == "1234.5678"

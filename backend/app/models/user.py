@@ -1,32 +1,45 @@
-"""User model for future multi-user support."""
+"""User model for device-based authentication."""
 
-from sqlalchemy import String
+from sqlalchemy import String, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import List, TYPE_CHECKING
 
-from app.models.base import Base, TimestampMixin, UUIDMixin
+from app.models.base import BaseModel
+
+if TYPE_CHECKING:
+    from app.models.asset import Asset
 
 
-class User(Base, UUIDMixin, TimestampMixin):
-    """User model for device-based identification."""
+class User(BaseModel):
+    """
+    User model for device-based authentication.
+    
+    Each device gets a unique user record for data isolation.
+    """
     
     __tablename__ = "users"
     
+    # Device identifier (unique per installation)
     device_id: Mapped[str] = mapped_column(
         String(255),
         unique=True,
         nullable=False,
         index=True,
-        doc="Unique device identifier for iOS device"
+        doc="Unique device identifier"
     )
     
     # Relationships
-    assets: Mapped[list["Asset"]] = relationship(
+    assets: Mapped[List["Asset"]] = relationship(
         "Asset",
         back_populates="user",
         cascade="all, delete-orphan",
-        doc="Assets owned by this user"
+        lazy="select"
     )
     
     def __repr__(self) -> str:
-        """String representation of User."""
-        return f"<User(id={self.id}, device_id='{self.device_id}')>"
+        """String representation."""
+        return f"<User(id={self.id}, device_id={self.device_id})>"
+
+
+# # Create additional indexes
+# Index('ix_users_device_id', User.device_id)

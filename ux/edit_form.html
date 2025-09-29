@@ -1,0 +1,365 @@
+<html><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>window.FontAwesomeConfig = { autoReplaceSvg: 'nest'};</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    
+    <style>::-webkit-scrollbar { display: none;}</style>
+    <script>tailwind.config = {
+  "theme": {
+    "extend": {
+      "fontFamily": {
+        "inter": [
+          "Inter",
+          "sans-serif"
+        ]
+      },
+      "colors": {
+        "primary": "#007BFF",
+        "secondary": "#1E40AF",
+        "success": "#28A745",
+        "danger": "#EF4444",
+        "warning": "#F59E0B",
+        "light": "#F8F9FA",
+        "gray": {
+          "50": "#F9FAFB",
+          "100": "#F3F4F6",
+          "200": "#E5E7EB",
+          "300": "#DCDCDC",
+          "400": "#9CA3AF",
+          "500": "#6B7280",
+          "600": "#4B5563",
+          "700": "#374151",
+          "800": "#1F2937",
+          "900": "#111827"
+        }
+      }
+    }
+  }
+};</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&amp;display=swap"><style>
+      body {
+        font-family: 'Inter', sans-serif !important;
+      }
+      
+      /* Preserve Font Awesome icons */
+      .fa, .fas, .far, .fal, .fab {
+        font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
+      }
+    </style><style>
+  .highlighted-section {
+    outline: 2px solid #3F20FB;
+    background-color: rgba(63, 32, 251, 0.1);
+  }
+
+  .edit-button {
+    position: absolute;
+    z-index: 1000;
+  }
+
+  ::-webkit-scrollbar {
+    display: none;
+  }
+
+  html, body {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Mobile Styles */
+  @media (max-width: 768px) {
+    .sidebar-mobile {
+      transform: translateX(-100%);
+      transition: transform 0.3s ease-in-out;
+    }
+    
+    .sidebar-mobile.open {
+      transform: translateX(0);
+    }
+    
+    .mobile-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 30;
+    }
+    
+    .mobile-overlay.active {
+      display: block;
+    }
+    
+    .main-content-mobile {
+      margin-left: 0 !important;
+    }
+  }
+  </style></head>
+<body class="bg-light font-custom">
+    <!-- Mobile Overlay -->
+    <div id="mobile-overlay" class="mobile-overlay" onclick="closeMobileMenu()"></div>
+    <div id="dashboard-container" class="min-h-screen">
+        <aside id="sidebar" class="fixed left-0 top-0 w-64 h-full bg-white border-r border-gray-300 z-40 sidebar-mobile md:translate-x-0">
+            <div class="p-6">
+                <div class="flex items-center space-x-3 mb-8">
+                    <div class="w-10 h-10 bg-gradient-to-r from-primary to-secondary rounded-lg flex items-center justify-center">
+                        <i class="fa-solid fa-coins text-white text-lg"></i>
+                    </div>
+                    <span class="text-xl font-bold text-gray-900">MoneyInOne</span>
+                </div>
+                
+                <nav class="space-y-2">
+                    <span class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer">
+                        <i class="fa-solid fa-chart-line"></i>
+                        <span class="font-medium">Dashboard</span>
+                    </span>
+                    <span class="flex items-center space-x-3 px-4 py-3 rounded-lg bg-primary text-white cursor-pointer">
+                        <i class="fa-solid fa-wallet"></i>
+                        <span class="font-medium">Assets</span>
+                    </span>
+                    <span class="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer">
+                        <i class="fa-solid fa-credit-card"></i>
+                        <span class="font-medium">Credit</span>
+                    </span>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Mobile Menu Button -->
+        <button id="mobile-menu-btn" class="fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-md md:hidden" onclick="toggleMobileMenu()">
+            <i class="fa-solid fa-bars text-gray-600"></i>
+        </button>
+
+        <main id="main-content" class="ml-64 main-content-mobile md:ml-64">
+            <header id="header" class="bg-white border-b border-gray-300 px-4 md:px-8 py-4 md:py-6">
+                <div class="flex items-center justify-between ml-12 md:ml-0">
+                    <div>
+                        <h1 class="text-xl md:text-2xl font-bold text-gray-900">Edit Asset</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button id="back-btn" class="flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
+                            <i class="fa-solid fa-arrow-left"></i>
+                            <span>Back to Assets</span>
+                        </button>
+                        <div class="w-8 h-8 rounded-full bg-gray-300 overflow-hidden">
+                            <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-3.jpg" alt="Profile" class="w-full h-full object-cover">
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div id="form-content" class="p-4 md:p-8">
+                <div class="max-w-2xl mx-auto">
+                    <div id="edit-form-card" class="bg-white rounded-lg p-4 md:p-8 shadow-sm border border-gray-300">
+                        <div class="text-center mb-8">
+                            <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fa-solid fa-edit text-primary text-2xl"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold text-gray-900">Edit Asset</h2>
+                        </div>
+
+                        <form id="edit-asset-form" class="space-y-6">
+                            <div id="asset-type-section">
+                                <label class="block text-base font-medium text-gray-700 mb-2">Asset Type</label>
+                                <select id="asset-type" class="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white">
+                                    <option value="cash" selected="">Cash</option>
+                                    <option value="gold">Gold</option>
+                                    <option value="bonds">Bonds</option>
+                                    <option value="stock">Stock</option>
+                                    <option value="crypto">Cryptocurrency</option>
+                                    <option value="housing">Real Estate</option>
+                                </select>
+                            </div>
+
+                            <div id="asset-name-section">
+                                <label class="block text-base font-medium text-gray-700 mb-2">Asset Name</label>
+                                <input type="text" id="asset-name" value="USD Savings Account" class="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                            </div>
+
+                            <div id="symbol-section" class="hidden">
+                                <label class="block text-base font-medium text-gray-700 mb-2">Symbol/Ticker</label>
+                                <input type="text" id="symbol-input" placeholder="e.g., AAPL, TSLA" class="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                <p class="text-xs text-gray-500 mt-1">Enter the stock ticker symbol</p>
+                            </div>
+
+                            <div id="currency-section">
+                                <label class="block text-base font-medium text-gray-700 mb-2">Currency</label>
+                                <select id="currency-select" class="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white">
+                                    <option value="USD" selected="">USD - US Dollar</option>
+                                    <option value="EUR">EUR - Euro</option>
+                                    <option value="GBP">GBP - British Pound</option>
+                                    <option value="JPY">JPY - Japanese Yen</option>
+                                    <option value="CAD">CAD - Canadian Dollar</option>
+                                    <option value="AUD">AUD - Australian Dollar</option>
+                                </select>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                                <div id="current-value-section">
+                                    <label class="block text-base font-medium text-gray-700 mb-2">Current Value</label>
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                                        <input type="number" id="current-value" value="25480.00" step="0.01" class="w-full pl-8 pr-4 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                    </div>
+                                </div>
+
+                                <div id="shares-section" class="hidden">
+                                    <label class="block text-base font-medium text-gray-700 mb-2">Number of Shares</label>
+                                    <input type="number" id="shares-input" placeholder="0" step="1" class="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                </div>
+
+                                <div id="purchase-date-section" class="col-span-1">
+                                    <label class="block text-base font-medium text-gray-700 mb-2">Purchase Date</label>
+                                    <input type="date" id="purchase-date" value="2024-01-15" class="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                </div>
+                            </div>
+
+                            <div id="description-section">
+                                <label class="block text-base font-medium text-gray-700 mb-2">Description (Optional)</label>
+                                <textarea id="description" placeholder="Add any additional notes about this asset..." rows="3" class="w-full px-4 py-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none">Primary savings account for emergency fund and daily expenses</textarea>
+                            </div>
+
+                            <div id="action-buttons" class="flex flex-col items-center space-y-4 pt-6 border-t border-gray-300">
+                                <div class="flex flex-col md:flex-row items-center justify-center space-y-3 md:space-y-0 md:space-x-4 w-full">
+                                    <button type="button" id="cancel-btn" class="w-full md:w-auto px-8 py-3 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" id="update-btn" class="w-full md:w-auto px-8 py-3 text-base font-medium text-white bg-primary rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors">
+                                        Update Asset
+                                    </button>
+                                </div>
+                                <button type="button" id="delete-asset-btn" class="w-full md:w-auto px-8 py-3 text-base font-medium text-danger bg-white border border-red-300 rounded-lg hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors">
+                                    Delete Asset
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+
+    <script>
+        const assetTypeSelect = document.getElementById('asset-type');
+        const symbolSection = document.getElementById('symbol-section');
+        const sharesSection = document.getElementById('shares-section');
+        const form = document.getElementById('edit-asset-form');
+        const deleteBtn = document.getElementById('delete-asset-btn');
+
+        assetTypeSelect.addEventListener('change', function() {
+            const selectedType = this.value;
+            
+            if (selectedType === 'stock') {
+                symbolSection.classList.remove('hidden');
+                sharesSection.classList.remove('hidden');
+            } else {
+                symbolSection.classList.add('hidden');
+                sharesSection.classList.add('hidden');
+            }
+        });
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                assetType: document.getElementById('asset-type').value,
+                assetName: document.getElementById('asset-name').value,
+                symbol: document.getElementById('symbol-input').value,
+                currency: document.getElementById('currency-select').value,
+                currentValue: document.getElementById('current-value').value,
+                shares: document.getElementById('shares-input').value,
+                purchaseDate: document.getElementById('purchase-date').value,
+                description: document.getElementById('description').value
+            };
+            
+            console.log('Asset updated:', formData);
+            alert('Asset updated successfully!');
+        });
+
+        deleteBtn.addEventListener('click', function() {
+            // Get current form values
+            const assetName = document.getElementById('asset-name').value || 'Unknown Asset';
+            const assetValue = document.getElementById('current-value').value || '0.00';
+            
+            // Create URL parameters for delete page
+            const params = new URLSearchParams({
+                name: assetName,
+                value: '$' + assetValue
+            });
+            
+            // Redirect to delete page with asset information
+            window.location.href = `delete_form.html?${params.toString()}`;
+        });
+
+        document.getElementById('cancel-btn').addEventListener('click', function() {
+            window.history.back();
+        });
+
+        document.getElementById('back-btn').addEventListener('click', function() {
+            window.history.back();
+        });
+
+        // Populate form with URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const assetName = urlParams.get('name');
+        const assetValue = urlParams.get('value');
+        const purchaseDate = urlParams.get('date');
+        
+        if (assetName) {
+            document.getElementById('asset-name').value = assetName;
+        }
+        if (assetValue) {
+            // Remove currency symbol and set value
+            const numericValue = assetValue.replace(/[^\d.-]/g, '');
+            document.getElementById('current-value').value = numericValue;
+        }
+        if (purchaseDate) {
+            // Convert date format if needed
+            const dateObj = new Date(purchaseDate);
+            if (!isNaN(dateObj.getTime())) {
+                document.getElementById('purchase-date').value = dateObj.toISOString().split('T')[0];
+            }
+        }
+
+        // Mobile menu functionality
+        function toggleMobileMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            const menuBtn = document.getElementById('mobile-menu-btn');
+            
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+            
+            const icon = menuBtn.querySelector('i');
+            if (sidebar.classList.contains('open')) {
+                icon.className = 'fa-solid fa-times text-gray-600';
+            } else {
+                icon.className = 'fa-solid fa-bars text-gray-600';
+            }
+        }
+        
+        function closeMobileMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            const menuBtn = document.getElementById('mobile-menu-btn');
+            const icon = menuBtn.querySelector('i');
+            
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+            icon.className = 'fa-solid fa-bars text-gray-600';
+        }
+        
+        document.querySelectorAll('#sidebar nav span').forEach(item => {
+            item.addEventListener('click', closeMobileMenu);
+        });
+        
+        window.addEventListener('resize', function() {
+            if (window.innerWidth >= 768) {
+                closeMobileMenu();
+            }
+        });
+    </script>
+
+</body></html>

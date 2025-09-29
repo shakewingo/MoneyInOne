@@ -1,140 +1,123 @@
-"""Asset management endpoints."""
+"""Simplified asset management endpoints."""
 
-from typing import List, Optional
-from uuid import UUID
-
-from fastapi import APIRouter, HTTPException, Depends, Query
+import uuid
+import logging
+from typing import List, Dict
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db_session
 from app.models.schemas import (
-    AssetCreate,
-    AssetUpdate,
-    AssetResponse,
-    AssetTypeResponse,
-    PaginatedResponse,
-    APIResponse,
+    AssetCreate, AssetUpdate, AssetResponse, SuccessResponse
 )
-from app.services.asset_service import AssetService
-from app.services.exceptions import NotFoundError, ValidationError
+from app.services.finance_service import FinanceService
+from app.services.exceptions import AssetNotFoundError, ValidationError
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# TODO: Replace with actual user authentication
-MOCK_USER_ID = UUID("550e8400-e29b-41d4-a716-446655440000")
 
-
-async def get_asset_service(db: AsyncSession = Depends(get_db_session)) -> AssetService:
-    """Dependency to get asset service."""
-    return AssetService(db)
-
-
-@router.get("/", response_model=PaginatedResponse)
-async def get_assets(
-    skip: int = Query(0, ge=0, description="Number of assets to skip"),
-    limit: int = Query(50, ge=1, le=100, description="Number of assets to return"),
-    asset_type_id: Optional[UUID] = Query(None, description="Filter by asset type"),
-    tags: Optional[str] = Query(None, description="Filter by tags (comma-separated)"),
-    service: AssetService = Depends(get_asset_service),
-) -> PaginatedResponse:
-    """Get all assets for the user with pagination and filtering."""
-    try:
-        # Parse tags if provided
-        tag_list = [tag.strip() for tag in tags.split(",")] if tags else None
-        
-        assets, total_count = await service.get_assets(
-            user_id=MOCK_USER_ID,
-            skip=skip,
-            limit=limit,
-            asset_type_id=asset_type_id,
-            tags=tag_list,
-        )
-        
-        # Convert to response models
-        asset_responses = [AssetResponse.model_validate(asset) for asset in assets]
-        
-        return PaginatedResponse(
-            items=asset_responses,
-            total_count=total_count,
-            page=skip // limit + 1,
-            page_size=limit,
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve assets: {str(e)}")
-
-
-@router.post("/", response_model=AssetResponse, status_code=201)
+@router.post("/", response_model=SuccessResponse)
 async def create_asset(
     asset_data: AssetCreate,
-    service: AssetService = Depends(get_asset_service),
-) -> AssetResponse:
+    device_id: str = Query(..., description="Device identifier"),
+    db: AsyncSession = Depends(get_db_session)
+):
     """Create a new asset."""
     try:
-        asset = await service.create_asset(asset_data, MOCK_USER_ID)
-        return AssetResponse.model_validate(asset)
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        service = FinanceService(db)
+        asset_id = await service.create_asset(device_id, asset_data)
+        
+        # Get the created asset to return in response
+        created_asset = await service.get_asset_by_id(asset_id, device_id)
+        
+        return SuccessResponse(
+            message="Asset created successfully",
+            data=created_asset
+        )
     except ValidationError as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to create asset: {str(e)}")
+        logger.error(f"Error creating asset: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/", response_model=Dict[str, List[AssetResponse]])
+async def get_assets_grouped(
+    device_id: str = Query(..., description="Device identifier"),
+    db: AsyncSession = Depends(get_db_session)
+):
+    """Get all assets grouped by category."""
+    try:
+        service = FinanceService(db)
+        assets = await service.get_assets_grouped_by_category(device_id)
+        return assets
+    except Exception as e:
+        logger.error(f"Error fetching grouped assets: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/{asset_id}", response_model=AssetResponse)
 async def get_asset(
-    asset_id: UUID,
-    service: AssetService = Depends(get_asset_service),
-) -> AssetResponse:
+    asset_id: uuid.UUID,
+    device_id: str = Query(..., description="Device identifier"),
+    db: AsyncSession = Depends(get_db_session)
+):
     """Get a specific asset by ID."""
     try:
-        asset = await service.get_asset_by_id(asset_id, MOCK_USER_ID)
-        return AssetResponse.model_validate(asset)
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        service = FinanceService(db)
+        asset = await service.get_asset_by_id(asset_id, device_id)
+        return asset
+    except AssetNotFoundError:
+        raise HTTPException(status_code=404, detail="Asset not found")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve asset: {str(e)}")
+        logger.error(f"Error fetching asset {asset_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/{asset_id}", response_model=AssetResponse)
+@router.put("/{asset_id}", response_model=SuccessResponse)
 async def update_asset(
-    asset_id: UUID,
-    asset_update: AssetUpdate,
-    service: AssetService = Depends(get_asset_service),
-) -> AssetResponse:
+    asset_id: uuid.UUID,
+    asset_data: AssetUpdate,
+    device_id: str = Query(..., description="Device identifier"),
+    db: AsyncSession = Depends(get_db_session)
+):
     """Update an existing asset."""
     try:
-        asset = await service.update_asset(asset_id, asset_update, MOCK_USER_ID)
-        return AssetResponse.model_validate(asset)
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        service = FinanceService(db)
+        await service.update_asset(asset_id, device_id, asset_data)
+        
+        # Get the updated asset to return in response
+        updated_asset = await service.get_asset_by_id(asset_id, device_id)
+        
+        return SuccessResponse(
+            message="Asset updated successfully",
+            data=updated_asset
+        )
+    except AssetNotFoundError:
+        raise HTTPException(status_code=404, detail="Asset not found")
     except ValidationError as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to update asset: {str(e)}")
+        logger.error(f"Error updating asset {asset_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/{asset_id}", response_model=APIResponse)
+@router.delete("/{asset_id}", response_model=SuccessResponse)
 async def delete_asset(
-    asset_id: UUID,
-    service: AssetService = Depends(get_asset_service),
-) -> APIResponse:
+    asset_id: uuid.UUID,
+    device_id: str = Query(..., description="Device identifier"),
+    db: AsyncSession = Depends(get_db_session)
+):
     """Delete an asset."""
     try:
-        await service.delete_asset(asset_id, MOCK_USER_ID)
-        return APIResponse(message=f"Asset {asset_id} deleted successfully")
-    except NotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        service = FinanceService(db)
+        await service.delete_asset(asset_id, device_id)
+        
+        return SuccessResponse(message="Asset deleted successfully")
+    except AssetNotFoundError:
+        raise HTTPException(status_code=404, detail="Asset not found")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to delete asset: {str(e)}")
-
-
-@router.get("/types/", response_model=List[AssetTypeResponse])
-async def get_asset_types(
-    service: AssetService = Depends(get_asset_service),
-) -> List[AssetTypeResponse]:
-    """Get all available asset types."""
-    try:
-        asset_types = await service.get_asset_types()
-        return [AssetTypeResponse.model_validate(asset_type) for asset_type in asset_types]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve asset types: {str(e)}")
+        logger.error(f"Error deleting asset {asset_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
