@@ -63,6 +63,11 @@ class BaseSchema(BaseModel):
         from_attributes=True,
         use_enum_values=True,
         validate_assignment=True,
+        
+        # Add JSON encoders to serialize Decimal as float for JSON responses
+        json_encoders={
+            Decimal: lambda v: float(v) if v is not None else None
+        }
     )
 
 

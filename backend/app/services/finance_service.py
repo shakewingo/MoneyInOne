@@ -44,7 +44,9 @@ logger = logging.getLogger(__name__)
 # Generic types for assets and credits
 ItemModel = TypeVar("ItemModel", Asset, Credit)
 ItemResponse = TypeVar("ItemResponse", AssetResponse, CreditResponse)
-CategoryBreakdown = TypeVar("CategoryBreakdown", AssetCategoryBreakdown, CreditCategoryBreakdown)
+CategoryBreakdown = TypeVar(
+    "CategoryBreakdown", AssetCategoryBreakdown, CreditCategoryBreakdown
+)
 
 
 class FinanceService:
@@ -58,22 +60,24 @@ class FinanceService:
     ) -> tuple[Decimal, Decimal]:
         """
         Convert amount from one currency to another.
-        
+
         Args:
             amount: Amount to convert
             from_currency: Source currency code
             to_currency: Target currency code
-            
+
         Returns:
             Tuple of (converted_amount, exchange_rate)
         """
         if from_currency == to_currency:
             return amount, Decimal("1.0")
-        
+
         try:
             async with MarketDataService() as market_service:
-                exchange_rate = await market_service.get_exchange_rate(from_currency, to_currency)
-                
+                exchange_rate = await market_service.get_exchange_rate(
+                    from_currency, to_currency
+                )
+
                 if exchange_rate:
                     converted_amount = amount * exchange_rate
                     return converted_amount, exchange_rate
@@ -99,13 +103,13 @@ class FinanceService:
     ) -> Dict[str, Union[AssetCategoryBreakdown, CreditCategoryBreakdown]]:
         """
         Generic method to group items by category with currency conversion.
-        
+
         Args:
             items: List of assets or credits to group
             base_currency: Target currency for conversion
             response_class: Response schema class (AssetResponse or CreditResponse)
             breakdown_class: Breakdown schema class (AssetCategoryBreakdown or CreditCategoryBreakdown)
-            
+
         Returns:
             Dictionary mapping categories to their breakdowns
         """
@@ -114,7 +118,7 @@ class FinanceService:
 
         for item in items:
             category = item.category
-            
+
             # Initialize category if not exists
             if category not in grouped_items:
                 grouped_items[category] = []
@@ -130,7 +134,7 @@ class FinanceService:
             item_dict["converted_amount"] = converted_amount
             item_dict["conversion_rate"] = conversion_rate
             item_response = response_class(**item_dict)
-            
+
             grouped_items[category].append(item_response)
             category_totals[category] += converted_amount
 
@@ -138,7 +142,9 @@ class FinanceService:
         return {
             category: breakdown_class(
                 **{
-                    ("assets" if response_class == AssetResponse else "credits"): items_list,
+                    (
+                        "assets" if response_class == AssetResponse else "credits"
+                    ): items_list,
                     "total_amount": category_totals[category],
                     "count": len(items_list),
                 }
@@ -154,12 +160,12 @@ class FinanceService:
     ) -> tuple[Dict[str, Union[AssetBreakdown, CreditBreakdown]], Decimal]:
         """
         Calculate category summaries and total amount in base currency.
-        
+
         Args:
             items: List of assets or credits
             base_currency: Target currency for conversion
             breakdown_class: Breakdown class (AssetBreakdown or CreditBreakdown)
-            
+
         Returns:
             Tuple of (category_summary_dict, total_amount)
         """
@@ -169,22 +175,23 @@ class FinanceService:
 
         for item in items:
             category = item.category
-            
+
             # Convert to base currency
             converted_amount, _ = await self._convert_to_base_currency(
                 item.amount, item.currency, base_currency
             )
-            
+
             # Update category aggregates
-            category_totals[category] = category_totals.get(category, Decimal("0")) + converted_amount
+            category_totals[category] = (
+                category_totals.get(category, Decimal("0")) + converted_amount
+            )
             category_counts[category] = category_counts.get(category, 0) + 1
             total_amount += converted_amount
 
         # Build summary
         summary = {
             category: breakdown_class(
-                total_amount=total_amount,
-                count=category_counts[category]
+                total_amount=total_amount, count=category_counts[category]
             )
             for category, total_amount in category_totals.items()
         }
@@ -297,11 +304,11 @@ class FinanceService:
     ) -> Dict[str, AssetCategoryBreakdown]:
         """
         Get all assets grouped by category with currency conversion.
-        
+
         Args:
             device_id: User device ID
             base_currency: Target currency for conversion (default: USD)
-            
+
         Returns:
             Dict mapping category to AssetCategoryBreakdown with converted amounts
         """
@@ -406,11 +413,11 @@ class FinanceService:
     ) -> Dict[str, CreditCategoryBreakdown]:
         """
         Get all credits grouped by category with currency conversion.
-        
+
         Args:
             device_id: User device ID
             base_currency: Target currency for conversion (default: USD)
-            
+
         Returns:
             Dict mapping category to CreditCategoryBreakdown with converted amounts
         """
@@ -472,26 +479,29 @@ class FinanceService:
 
     # Portfolio Operations
     async def get_portfolio_summary(
-        self, device_id: str, base_currency: str = "USD", auto_refresh: bool = True
+        self, device_id: str, base_currency: str = "USD"
     ) -> PortfolioSummary:
         """
         Get portfolio summary with breakdown by category in base currency.
-        
+
         Args:
             device_id: User device ID
             base_currency: Target currency for all amounts (default: USD)
-            auto_refresh: Whether to refresh market prices (not implemented yet)
-            
+
         Returns:
             Portfolio summary with all amounts converted to base currency
         """
         user = await self._get_or_create_user(device_id)
 
         # Fetch all assets and credits
-        asset_result = await self.db.execute(select(Asset).where(Asset.user_id == user.id))
+        asset_result = await self.db.execute(
+            select(Asset).where(Asset.user_id == user.id)
+        )
         assets = asset_result.scalars().all()
 
-        credit_result = await self.db.execute(select(Credit).where(Credit.user_id == user.id))
+        credit_result = await self.db.execute(
+            select(Credit).where(Credit.user_id == user.id)
+        )
         credits = credit_result.scalars().all()
 
         # Calculate summaries using helper method
@@ -579,7 +589,10 @@ class FinanceService:
         logger.info("Ensured default credit types exist")
 
     async def refresh_prices(
-        self, device_id: str, asset_ids: Optional[List[uuid.UUID]] = None
+        self,
+        device_id: str,
+        asset_ids: Optional[List[uuid.UUID]] = None,
+        base_currency: str = "USD",
     ) -> Dict[str, int]:
         """
         Refresh market prices for assets.
@@ -587,7 +600,7 @@ class FinanceService:
         Args:
             device_id: User device ID
             asset_ids: Optional list of specific asset IDs to refresh. If None, refreshes all market-tracked assets.
-
+            base_currency: Target currency for conversion (default: USD)
         Returns:
             Dict with counts: {"updated": int, "failed": int, "skipped": int}
         """
@@ -625,7 +638,9 @@ class FinanceService:
 
         # Fetch market data
         async with MarketDataService() as market_service:
-            price_results = await market_service.update_multiple_assets(assets_data)
+            price_results = await market_service.update_multiple_assets(
+                assets_data, base_currency
+            )
 
         # Update database with new prices
         updated_count = 0

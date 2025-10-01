@@ -39,7 +39,7 @@ enum Currency: String, Codable, CaseIterable, Identifiable {
     
     /// Display text combining code and name
     var displayText: String {
-        "\(rawValue) - \(name)"
+        "\(rawValue)"
     }
 }
 

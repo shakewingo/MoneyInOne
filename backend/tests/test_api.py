@@ -94,13 +94,13 @@ class TestAPIIntegration:
         # UPDATE
         response = await client.put(
             f"/api/v1/credits/{credit_id}?device_id={device_id}",
-            json={"amount": "45000.00"}
+            json={"amount": 45000.00}
         )
         assert response.status_code == 200
         
         # Verify and DELETE
         response = await client.get(f"/api/v1/credits/{credit_id}?device_id={device_id}")
-        assert response.json()["amount"] == "45000.0000"
+        assert response.json()["amount"] == 45000.00
         
         response = await client.delete(f"/api/v1/credits/{credit_id}?device_id={device_id}")
         assert response.status_code == 200
@@ -269,7 +269,7 @@ async def test_api_response_formats(client: AsyncClient, factory):
     
     # Verify decimal serialization
     created_asset = result["data"]
-    assert created_asset["amount"] == "12345.6789"  # String format for precision
+    assert created_asset["amount"] == 12345.6789  # Float format for precision
     assert "created_at" in created_asset
     assert "updated_at" in created_asset
 

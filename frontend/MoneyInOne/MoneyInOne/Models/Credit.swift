@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 /// Credit categories
 enum CreditCategory: String, Codable, CaseIterable, Identifiable {
@@ -34,6 +35,16 @@ enum CreditCategory: String, Codable, CaseIterable, Identifiable {
         case .mortgage: return "house.and.flag.fill"
         case .lineOfCredit: return "arrow.left.arrow.right"
         case .other: return "ellipsis.circle"
+        }
+    }
+    
+    var color: Color {
+        switch self {
+        case .creditCard: return .red
+        case .loan: return .orange
+        case .mortgage: return .pink
+        case .lineOfCredit: return .yellow
+        case .other: return .gray
         }
     }
 }

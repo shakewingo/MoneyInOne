@@ -269,14 +269,14 @@ class MarketDataService:
         )
 
     async def update_asset_price(
-        self, asset_data: Dict
+        self, asset_data: Dict, base_currency: str = "USD"
     ) -> Tuple[bool, Optional[Decimal], Optional[Decimal]]:
         """
         Update single asset price and return (success, market_price, current_amount).
 
         Args:
             asset_data: Dict with keys: category, symbol, shares, currency, amount
-
+            base_currency: Target currency for conversion (default: USD)
         Returns:
             Tuple of (success, market_price, current_amount)
         """
@@ -308,29 +308,29 @@ class MarketDataService:
         # Calculate current amount
         current_amount = market_price * Decimal(str(shares))
 
-        # Convert to base currency if needed (CNY)
-        if currency != "CNY":
-            exchange_rate = await self.get_exchange_rate(currency, "CNY")
+        # TODO: potential bug, if currency is CAD but stock's currentcy is USD and base_currency is CNY, need 2 times conversion
+        if currency != base_currency:
+            exchange_rate = await self.get_exchange_rate(currency, base_currency)
             if exchange_rate:
                 current_amount = current_amount * exchange_rate
             else:
-                logger.warning(f"Failed to convert {currency} to CNY")
+                logger.warning(f"Failed to convert {currency} to {base_currency}")
 
         return True, market_price, current_amount
 
     async def update_multiple_assets(
-        self, assets_data: List[Dict]
+        self, assets_data: List[Dict], base_currency: str = "USD"
     ) -> Dict[str, Tuple[bool, Optional[Decimal], Optional[Decimal]]]:
         """
         Update multiple assets concurrently.
 
         Args:
             assets_data: List of asset dicts with keys: id, category, symbol, shares, currency
-
+            base_currency: Target currency for conversion (default: USD)
         Returns:
             Dict mapping asset_id to (success, market_price, current_amount) tuples
         """
-        tasks = [self.update_asset_price(asset_data) for asset_data in assets_data]
+        tasks = [self.update_asset_price(asset_data, base_currency) for asset_data in assets_data]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Map results back to asset IDs

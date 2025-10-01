@@ -17,7 +17,7 @@ router = APIRouter()
 async def get_portfolio_summary(
     device_id: str = Query(..., description="Device identifier"),
     base_currency: str = Query("USD", description="Base currency for calculations"),
-    db: AsyncSession = Depends(get_db_session)
+    db: AsyncSession = Depends(get_db_session),
 ):
     """Get portfolio summary with breakdown by asset category."""
     try:

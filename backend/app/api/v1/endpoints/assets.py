@@ -8,7 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db_session
 from app.models.schemas import (
-    AssetCreate, AssetUpdate, AssetResponse, AssetCategoryBreakdown, SuccessResponse
+    AssetCreate,
+    AssetUpdate,
+    AssetResponse,
+    AssetCategoryBreakdown,
+    SuccessResponse,
 )
 from app.services.finance_service import FinanceService
 from app.services.exceptions import AssetNotFoundError, ValidationError
@@ -22,20 +26,17 @@ router = APIRouter()
 async def create_asset(
     asset_data: AssetCreate,
     device_id: str = Query(..., description="Device identifier"),
-    db: AsyncSession = Depends(get_db_session)
+    db: AsyncSession = Depends(get_db_session),
 ):
     """Create a new asset."""
     try:
         service = FinanceService(db)
         asset_id = await service.create_asset(device_id, asset_data)
-        
+
         # Get the created asset to return in response
         created_asset = await service.get_asset_by_id(asset_id, device_id)
-        
-        return SuccessResponse(
-            message="Asset created successfully",
-            data=created_asset
-        )
+
+        return SuccessResponse(message="Asset created successfully", data=created_asset)
     except ValidationError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -46,8 +47,10 @@ async def create_asset(
 @router.get("/", response_model=Dict[str, AssetCategoryBreakdown])
 async def get_assets_grouped(
     device_id: str = Query(..., description="Device identifier"),
-    base_currency: str = Query("USD", description="Base currency for amount conversion"),
-    db: AsyncSession = Depends(get_db_session)
+    base_currency: str = Query(
+        "USD", description="Base currency for amount conversion"
+    ),
+    db: AsyncSession = Depends(get_db_session),
 ):
     """Get all assets grouped by category with currency conversion."""
     try:
@@ -63,7 +66,7 @@ async def get_assets_grouped(
 async def get_asset(
     asset_id: uuid.UUID,
     device_id: str = Query(..., description="Device identifier"),
-    db: AsyncSession = Depends(get_db_session)
+    db: AsyncSession = Depends(get_db_session),
 ):
     """Get a specific asset by ID."""
     try:
@@ -82,20 +85,17 @@ async def update_asset(
     asset_id: uuid.UUID,
     asset_data: AssetUpdate,
     device_id: str = Query(..., description="Device identifier"),
-    db: AsyncSession = Depends(get_db_session)
+    db: AsyncSession = Depends(get_db_session),
 ):
     """Update an existing asset."""
     try:
         service = FinanceService(db)
         await service.update_asset(asset_id, device_id, asset_data)
-        
+
         # Get the updated asset to return in response
         updated_asset = await service.get_asset_by_id(asset_id, device_id)
-        
-        return SuccessResponse(
-            message="Asset updated successfully",
-            data=updated_asset
-        )
+
+        return SuccessResponse(message="Asset updated successfully", data=updated_asset)
     except AssetNotFoundError:
         raise HTTPException(status_code=404, detail="Asset not found")
     except ValidationError as e:
@@ -109,13 +109,13 @@ async def update_asset(
 async def delete_asset(
     asset_id: uuid.UUID,
     device_id: str = Query(..., description="Device identifier"),
-    db: AsyncSession = Depends(get_db_session)
+    db: AsyncSession = Depends(get_db_session),
 ):
     """Delete an asset."""
     try:
         service = FinanceService(db)
         await service.delete_asset(asset_id, device_id)
-        
+
         return SuccessResponse(message="Asset deleted successfully")
     except AssetNotFoundError:
         raise HTTPException(status_code=404, detail="Asset not found")
@@ -123,19 +123,23 @@ async def delete_asset(
         logger.error(f"Error deleting asset {asset_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.post("/refresh-prices", response_model=SuccessResponse)
 async def refresh_all_prices(
     x_device_id: str = Header(..., description="Device ID for user identification"),
-    db: AsyncSession = Depends(get_db_session)
+    db: AsyncSession = Depends(get_db_session),
+    base_currency: str = Query(
+        "USD", description="Base currency for amount conversion"
+    ),
 ):
     """Refresh market prices for all market-tracked assets."""
     try:
         finance_service = FinanceService(db)
-        result = await finance_service.refresh_prices(x_device_id)
-        
+        result = await finance_service.refresh_prices(x_device_id, base_currency)
+
         return SuccessResponse(
             message=f"Price refresh completed: {result['updated']} updated, {result['failed']} failed, {result['skipped']} skipped",
-            data=result
+            data=result,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Price refresh failed: {str(e)}")
@@ -145,19 +149,21 @@ async def refresh_all_prices(
 async def refresh_single_asset_price(
     asset_id: uuid.UUID,
     x_device_id: str = Header(..., description="Device ID for user identification"),
-    db: AsyncSession = Depends(get_db_session)
+    db: AsyncSession = Depends(get_db_session),
 ):
     """Refresh market price for a single asset."""
     try:
         finance_service = FinanceService(db)
-        success = await finance_service.refresh_single_asset_price(asset_id, x_device_id)
-        
-        if not success:
-            raise HTTPException(status_code=404, detail="Asset not found or price update failed")
-        
-        return SuccessResponse(
-            message=f"Asset {asset_id} price updated successfully"
+        success = await finance_service.refresh_single_asset_price(
+            asset_id, x_device_id
         )
+
+        if not success:
+            raise HTTPException(
+                status_code=404, detail="Asset not found or price update failed"
+            )
+
+        return SuccessResponse(message=f"Asset {asset_id} price updated successfully")
     except AssetNotFoundError:
         raise HTTPException(status_code=404, detail="Asset not found")
     except Exception as e:

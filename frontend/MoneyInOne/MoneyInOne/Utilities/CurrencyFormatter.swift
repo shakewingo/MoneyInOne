@@ -17,8 +17,8 @@ struct CurrencyFormatter {
         "EUR": "€",
         "GBP": "£",
         "JPY": "¥",
-        "CAD": "CA$",
-        "AUD": "A$"
+        "CAD": "$",
+        "AUD": "$"
     ]
     
     // MARK: - Decimal Places
