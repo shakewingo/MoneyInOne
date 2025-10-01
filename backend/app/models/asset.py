@@ -124,7 +124,7 @@ class Asset(BaseModel):
         doc="Optional notes about the asset"
     )
     
-    # Stock-specific Information (Optional)
+   # Market Data Fields (optional)
     symbol: Mapped[Optional[str]] = mapped_column(
         String(10),
         nullable=True,
@@ -134,7 +134,32 @@ class Asset(BaseModel):
     shares: Mapped[Optional[float]] = mapped_column(
         Numeric(15, 6),
         nullable=True,
-        doc="Number of shares - used for stock assets"
+        doc="Number of shares/quantity - used for stock assets"
+    )
+    
+    original_amount: Mapped[Optional[Decimal]] = mapped_column(
+        Numeric(15, 4),
+        nullable=True,
+        doc="Original purchase amount (preserved for comparison)"
+    )
+    
+    current_amount: Mapped[Optional[Decimal]] = mapped_column(
+        Numeric(15, 4),
+        nullable=True,
+        doc="Current market value (calculated from market_price * shares)"
+    )
+    
+    last_price_update: Mapped[Optional[datetime]] = mapped_column(
+        DateTime,
+        nullable=True,
+        doc="Timestamp of last update like price updates"
+    )
+    
+    is_market_tracked: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        doc="Whether to track based on real-time price, selected by user"
     )
     
     # Relationships

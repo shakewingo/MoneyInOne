@@ -1,14 +1,14 @@
-"""Simplified asset management endpoints."""
+"""Asset management endpoints with integrated market data functionality."""
 
 import uuid
 import logging
 from typing import List, Dict
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db_session
 from app.models.schemas import (
-    AssetCreate, AssetUpdate, AssetResponse, SuccessResponse
+    AssetCreate, AssetUpdate, AssetResponse, AssetCategoryBreakdown, SuccessResponse
 )
 from app.services.finance_service import FinanceService
 from app.services.exceptions import AssetNotFoundError, ValidationError
@@ -43,15 +43,16 @@ async def create_asset(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/", response_model=Dict[str, List[AssetResponse]])
+@router.get("/", response_model=Dict[str, AssetCategoryBreakdown])
 async def get_assets_grouped(
     device_id: str = Query(..., description="Device identifier"),
+    base_currency: str = Query("USD", description="Base currency for amount conversion"),
     db: AsyncSession = Depends(get_db_session)
 ):
-    """Get all assets grouped by category."""
+    """Get all assets grouped by category with currency conversion."""
     try:
         service = FinanceService(db)
-        assets = await service.get_assets_grouped_by_category(device_id)
+        assets = await service.get_assets_grouped_by_category(device_id, base_currency)
         return assets
     except Exception as e:
         logger.error(f"Error fetching grouped assets: {e}")
@@ -121,3 +122,43 @@ async def delete_asset(
     except Exception as e:
         logger.error(f"Error deleting asset {asset_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/refresh-prices", response_model=SuccessResponse)
+async def refresh_all_prices(
+    x_device_id: str = Header(..., description="Device ID for user identification"),
+    db: AsyncSession = Depends(get_db_session)
+):
+    """Refresh market prices for all market-tracked assets."""
+    try:
+        finance_service = FinanceService(db)
+        result = await finance_service.refresh_prices(x_device_id)
+        
+        return SuccessResponse(
+            message=f"Price refresh completed: {result['updated']} updated, {result['failed']} failed, {result['skipped']} skipped",
+            data=result
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Price refresh failed: {str(e)}")
+
+
+@router.post("/{asset_id}/refresh-price", response_model=SuccessResponse)
+async def refresh_single_asset_price(
+    asset_id: uuid.UUID,
+    x_device_id: str = Header(..., description="Device ID for user identification"),
+    db: AsyncSession = Depends(get_db_session)
+):
+    """Refresh market price for a single asset."""
+    try:
+        finance_service = FinanceService(db)
+        success = await finance_service.refresh_single_asset_price(asset_id, x_device_id)
+        
+        if not success:
+            raise HTTPException(status_code=404, detail="Asset not found or price update failed")
+        
+        return SuccessResponse(
+            message=f"Asset {asset_id} price updated successfully"
+        )
+    except AssetNotFoundError:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Price refresh failed: {str(e)}")

@@ -113,6 +113,7 @@ class AssetCreate(BaseSchema):
     notes: Optional[str] = Field(None, max_length=500, description="Optional notes")
     symbol: Optional[str] = Field(None, max_length=10, description="Stock symbol (e.g., AAPL) - for stock assets only")
     shares: Optional[float] = Field(None, gt=0, description="Number of shares - for stock assets only")
+    is_market_tracked: Optional[bool] = Field(False, description="Whether this asset supports real-time price updates")
     
     @field_validator("amount")
     @classmethod
@@ -135,8 +136,13 @@ class AssetUpdate(BaseSchema):
     currency: Optional[Currency] = None
     purchase_date: Optional[date] = None
     notes: Optional[str] = Field(None, max_length=500)
+    
+    # Market data fields
     symbol: Optional[str] = Field(None, max_length=10, description="Stock symbol (e.g., AAPL) - for stock assets only")
     shares: Optional[float] = Field(None, gt=0, description="Number of shares - for stock assets only")
+    is_market_tracked: Optional[bool] = Field(None, description="Whether this asset supports real-time price updates")
+    current_amount: Optional[Decimal] = Field(None, gt=0, description="Current market value")
+    original_amount: Optional[Decimal] = Field(None, gt=0, description="Original purchase amount")
     
     @field_validator("amount")
     @classmethod
@@ -149,6 +155,18 @@ class AssetUpdate(BaseSchema):
     def validate_shares(cls, v):
         """Ensure shares is positive if provided."""
         return validate_positive_shares(v)
+    
+    @field_validator("current_amount")
+    @classmethod
+    def validate_current_amount(cls, v):
+        """Ensure current amount is positive if provided."""
+        return validate_positive_amount(v)
+    
+    @field_validator("original_amount")
+    @classmethod
+    def validate_original_amount(cls, v):
+        """Ensure original amount is positive if provided."""
+        return validate_positive_amount(v)
     
     @model_validator(mode='after')
     def validate_stock_fields(self):
@@ -174,6 +192,13 @@ class AssetResponse(BaseSchema):
     notes: Optional[str]
     symbol: Optional[str]
     shares: Optional[float]
+    # Market data fields
+    original_amount: Optional[Decimal]
+    current_amount: Optional[Decimal]
+    last_price_update: Optional[datetime]
+    is_market_tracked: bool
+    converted_amount: Optional[Decimal] = Field(None, description="Amount converted to base currency")
+    conversion_rate: Optional[Decimal] = Field(None, description="Exchange rate used for conversion")
     created_at: datetime
     updated_at: datetime
 
@@ -221,6 +246,8 @@ class CreditResponse(BaseSchema):
     currency: str
     issue_date: date
     notes: Optional[str]
+    converted_amount: Optional[Decimal] = Field(None, description="Amount converted to base currency")
+    conversion_rate: Optional[Decimal] = Field(None, description="Exchange rate used for conversion")
     created_at: datetime
     updated_at: datetime
 
@@ -228,22 +255,36 @@ class CreditResponse(BaseSchema):
 # Portfolio Schemas
 class AssetBreakdown(BaseSchema):
     """Schema for asset breakdown in portfolio."""
-    total_amount: Decimal = Field(..., description="Total amount in original currency")
+    total_amount: Decimal = Field(..., description="Total amount in base currency")
     count: int = Field(..., ge=0, description="Number of assets in this category")
 
 
 class CreditBreakdown(BaseSchema):
     """Schema for credit breakdown in portfolio."""
-    total_amount: Decimal = Field(..., description="Total amount owed in original currency")
+    total_amount: Decimal = Field(..., description="Total amount owed in base currency")
+    count: int = Field(..., ge=0, description="Number of credits in this category")
+
+
+class AssetCategoryBreakdown(BaseSchema):
+    """Schema for assets grouped by category with totals."""
+    assets: List[AssetResponse] = Field(..., description="List of assets in this category")
+    total_amount: Decimal = Field(..., description="Total amount in base currency")
+    count: int = Field(..., ge=0, description="Number of assets in this category")
+
+
+class CreditCategoryBreakdown(BaseSchema):
+    """Schema for credits grouped by category with totals."""
+    credits: List[CreditResponse] = Field(..., description="List of credits in this category")
+    total_amount: Decimal = Field(..., description="Total amount owed in base currency")
     count: int = Field(..., ge=0, description="Number of credits in this category")
 
 
 class PortfolioSummary(BaseSchema):
     """Schema for portfolio summary response."""
     base_currency: str = Field(..., description="Base currency for display")
-    asset_summary: Dict[str, AssetBreakdown] = Field(..., description="Breakdown by asset category")
-    credit_summary: Dict[str, CreditBreakdown] = Field(..., description="Breakdown by credit category")
-    net_summary: Dict[str, Decimal] = Field(..., description="Net amounts (assets - credits) by currency")
+    asset_summary: Dict[str, AssetBreakdown] = Field(..., description="Breakdown by asset category in base currency")
+    credit_summary: Dict[str, CreditBreakdown] = Field(..., description="Breakdown by credit category in base currency")
+    net_worth: Decimal = Field(..., description="Total net worth (assets - credits) in base currency")
     last_updated: datetime = Field(..., description="Last calculation timestamp")
 
 

@@ -33,34 +33,34 @@ class Settings(BaseSettings):
     )
     
     # External APIs
-    exchange_rate_api_key: Optional[str] = Field(
-        default=None,
-        description="Exchange rate API key"
+    alpha_vantage_api_key: str = Field(
+        default="JJZ0GGL8ZMCGIME9",  # Replace with your API key
+        description="Alpha Vantage API key"
     )
-    yahoo_finance_timeout: int = Field(
-        default=10,
-        description="Yahoo Finance API timeout in seconds"
+    alpha_vantage_base_url: str = Field(
+        default="https://www.alphavantage.co/query",
+        description="Alpha Vantage API base URL"
     )
-    coingecko_timeout: int = Field(
+    alpha_vantage_timeout: int = Field(
         default=10,
-        description="CoinGecko API timeout in seconds"
+        description="Alpha Vantage API timeout in seconds"
     )
     
-    # Caching
+    # Caching (increased TTL to reduce API calls)
     cache_ttl_exchange_rates: int = Field(
-        default=3600,  # 1 hour
+        default=3600*24,  # 24 hours
         description="Exchange rates cache TTL in seconds"
     )
-    cache_ttl_asset_prices: int = Field(
-        default=300,  # 5 minutes
+    cache_ttl_market_prices: int = Field(
+        default=3600*24,  # 24 hours
         description="Asset prices cache TTL in seconds"
     )
     
-    # Security
-    secret_key: str = Field(
-        default="your-secret-key-here-change-in-production",
-        description="Secret key for JWT tokens"
-    )
+    # # Security
+    # secret_key: str = Field(
+    #     default="your-secret-key-here-change-in-production",
+    #     description="Secret key for JWT tokens"
+    # )
     
     # Logging
     log_level: str = Field(default="INFO", description="Logging level")

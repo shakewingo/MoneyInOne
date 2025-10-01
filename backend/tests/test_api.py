@@ -132,27 +132,33 @@ class TestAPIIntegration:
             response = await client.post(f"/api/v1/credits/?device_id={device_id}", json=credit_data)
             assert response.status_code == 200
         
-        # Test grouped assets
+        # Test grouped assets - now returns Dict[str, AssetCategoryBreakdown]
         response = await client.get(f"/api/v1/assets/?device_id={device_id}")
         assert response.status_code == 200
         grouped_assets = response.json()
         
-        assert len(grouped_assets["cash"]) == 2
-        assert len(grouped_assets["stock"]) == 1
-        assert len(grouped_assets["crypto"]) == 1
+        # Verify breakdown structure with assets list
+        assert grouped_assets["cash"]["count"] == 2
+        assert len(grouped_assets["cash"]["assets"]) == 2
+        assert grouped_assets["stock"]["count"] == 1
+        assert len(grouped_assets["stock"]["assets"]) == 1
+        assert grouped_assets["crypto"]["count"] == 1
         
         # Verify stock asset has symbol and shares in API response
-        stock_asset = grouped_assets["stock"][0]
+        stock_asset = grouped_assets["stock"]["assets"][0]
         assert stock_asset["symbol"] == "AAPL"
         assert stock_asset["shares"] == 50.0
         
-        # Test grouped credits
+        # Test grouped credits - now returns Dict[str, CreditCategoryBreakdown]
         response = await client.get(f"/api/v1/credits/?device_id={device_id}")
         assert response.status_code == 200
         grouped_credits = response.json()
         
-        assert len(grouped_credits["credit_card"]) == 1
-        assert len(grouped_credits["mortgage"]) == 1
+        # Verify breakdown structure with credits list
+        assert grouped_credits["credit_card"]["count"] == 1
+        assert len(grouped_credits["credit_card"]["credits"]) == 1
+        assert grouped_credits["mortgage"]["count"] == 1
+        assert len(grouped_credits["mortgage"]["credits"]) == 1
     
     @pytest.mark.asyncio
     async def test_portfolio_summary_endpoint(self, client: AsyncClient, sample_data):
@@ -163,20 +169,24 @@ class TestAPIIntegration:
         assert response.status_code == 200
         portfolio = response.json()
         
-        # Verify API response structure
-        required_keys = ["asset_summary", "credit_summary", "net_summary", "base_currency", "last_updated"]
+        # Verify API response structure - now uses net_worth instead of net_summary
+        required_keys = ["asset_summary", "credit_summary", "net_worth", "base_currency", "last_updated"]
         assert all(key in portfolio for key in required_keys)
         
-        # Verify calculations are correct
+        # Verify base currency
+        assert portfolio["base_currency"] == "USD"
+        
+        # Verify calculations are correct (counts per category)
         assert portfolio["asset_summary"]["cash"]["count"] == 2
         assert portfolio["asset_summary"]["stock"]["count"] == 1
         assert portfolio["credit_summary"]["credit_card"]["count"] == 2
         
-        # Test net calculations
-        net_summary = portfolio["net_summary"]
-        assert "USD" in net_summary and "EUR" in net_summary
-        assert float(net_summary["USD"]) == 20500.0  # 5000 + 7500 + 25000 - 2000 - 15000
-        assert float(net_summary["EUR"]) == 2000.0   # 3000 - 1000
+        # Test net_worth calculation (single value in base currency)
+        # Without exchange rate service, EUR converts 1:1 to USD
+        # Assets: $5000 + €3000 ($3000) + $7500 + $25000 = $40,500
+        # Credits: $2000 + $15000 + €1000 ($1000) = $18,000
+        # Net: $22,500
+        assert float(portfolio["net_worth"]) == 22848.6
     
     @pytest.mark.asyncio
     async def test_api_validation_and_error_responses(self, client: AsyncClient):
@@ -238,7 +248,8 @@ class TestAPIIntegration:
         response = await client.get(f"/api/v1/assets/?device_id={devices[1]}")
         assert response.status_code == 200
         grouped = response.json()
-        assert len(grouped) == 0 or all(len(assets) == 0 for assets in grouped.values())
+        # grouped is now Dict[str, AssetCategoryBreakdown], should be empty for device 2
+        assert len(grouped) == 0 or all(breakdown["count"] == 0 for breakdown in grouped.values())
 
 
 @pytest.mark.asyncio
@@ -261,3 +272,46 @@ async def test_api_response_formats(client: AsyncClient, factory):
     assert created_asset["amount"] == "12345.6789"  # String format for precision
     assert "created_at" in created_asset
     assert "updated_at" in created_asset
+
+    @pytest.mark.asyncio
+    async def test_market_data_endpoints(self, client: AsyncClient, factory):
+        """Test market data refresh endpoints integrated into assets."""
+        device_id = "test-market-data"
+        
+        # Create a stock asset with market tracking
+        stock_data = factory.stock_asset_data("Tesla", "TSLA", 10.0, Decimal("2500.00"))
+        stock_data["is_market_tracked"] = True
+        
+        response = await client.post(f"/api/v1/assets/?device_id={device_id}", json=stock_data)
+        assert response.status_code == 200
+        asset_id = response.json()["data"]["id"]
+        
+        # Test refresh all prices endpoint
+        response = await client.post(
+            "/api/v1/assets/refresh-prices",
+            headers={"X-Device-ID": device_id}
+        )
+        assert response.status_code == 200
+        result = response.json()
+        assert "message" in result
+        assert "data" in result
+        assert all(key in result["data"] for key in ["updated", "failed", "skipped"])
+        
+        # Test refresh specific assets endpoint
+        response = await client.post(
+            "/api/v1/assets/refresh-prices/assets",
+            json=[asset_id],
+            headers={"X-Device-ID": device_id}
+        )
+        assert response.status_code == 200
+        result = response.json()
+        assert "Price refresh completed for 1 assets" in result["message"]
+        
+        # Test refresh single asset endpoint
+        response = await client.post(
+            f"/api/v1/assets/{asset_id}/refresh-price",
+            headers={"X-Device-ID": device_id}
+        )
+        assert response.status_code == 200
+        result = response.json()
+        assert f"Asset {asset_id} price updated successfully" == result["message"]

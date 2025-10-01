@@ -1,4 +1,9 @@
 """FastAPI application main module."""
+# TODO:
+# 1. portfolio summary based on concurrency conversion
+# 2. grouped asset total amount based on concurrency conversion
+# 3. refresh price test & yahoo API setting
+# 4. modify model fields to be selected unit (g, kg/shares) ->  quantity
 
 import logging
 from contextlib import asynccontextmanager

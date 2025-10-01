@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db_session
 from app.models.schemas import (
-    CreditCreate, CreditUpdate, CreditResponse, SuccessResponse
+    CreditCreate, CreditUpdate, CreditResponse, CreditCategoryBreakdown, SuccessResponse
 )
 from app.services.finance_service import FinanceService
 from app.services.exceptions import ValidationError, CreditNotFoundError
@@ -43,15 +43,16 @@ async def create_credit(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/", response_model=Dict[str, List[CreditResponse]])
+@router.get("/", response_model=Dict[str, CreditCategoryBreakdown])
 async def get_credits_grouped(
     device_id: str = Query(..., description="Device identifier"),
+    base_currency: str = Query("USD", description="Base currency for amount conversion"),
     db: AsyncSession = Depends(get_db_session)
 ):
-    """Get all credits grouped by category."""
+    """Get all credits grouped by category with currency conversion."""
     try:
         service = FinanceService(db)
-        credits = await service.get_credits_grouped_by_category(device_id)
+        credits = await service.get_credits_grouped_by_category(device_id, base_currency)
         return credits
     except Exception as e:
         logger.error(f"Error fetching grouped credits: {e}")
