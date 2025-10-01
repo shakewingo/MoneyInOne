@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import assets, health, portfolio, metadata
+from app.api.v1.endpoints import assets, credits, health, portfolio, metadata
 
 api_router = APIRouter()
 
@@ -17,6 +17,12 @@ api_router.include_router(
     assets.router,
     prefix="/assets",
     tags=["Assets"]
+)
+
+api_router.include_router(
+    credits.router,
+    prefix="/credits",
+    tags=["Credits"]
 )
 
 api_router.include_router(

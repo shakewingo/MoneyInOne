@@ -25,13 +25,15 @@ async def get_metadata(
         # Get currencies and categories
         currencies_data = await service.get_currencies()
         asset_categories = await service.get_asset_categories()
+        credit_categories = await service.get_credit_categories()
         
         # Convert to proper schema format
         currencies = [CurrencyInfo(**currency) for currency in currencies_data]
         
         return MetadataResponse(
             currencies=currencies,
-            asset_categories=asset_categories
+            asset_categories=asset_categories,
+            credit_categories=credit_categories
         )
     except Exception as e:
         logger.error(f"Error fetching metadata: {e}")
@@ -52,7 +54,7 @@ async def get_currencies(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/categories", response_model=List[str])
+@router.get("/asset-categories", response_model=List[str])
 async def get_asset_categories(
     db: AsyncSession = Depends(get_db_session)
 ):
@@ -63,4 +65,18 @@ async def get_asset_categories(
         return categories
     except Exception as e:
         logger.error(f"Error fetching asset categories: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/credit-categories", response_model=List[str])
+async def get_credit_categories(
+    db: AsyncSession = Depends(get_db_session)
+):
+    """Get list of supported credit categories."""
+    try:
+        service = FinanceService(db)
+        categories = await service.get_credit_categories()
+        return categories
+    except Exception as e:
+        logger.error(f"Error fetching credit categories: {e}")
         raise HTTPException(status_code=500, detail=str(e))

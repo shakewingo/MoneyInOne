@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 from app.core.config import settings
 from app.core.database import init_database, close_database
 from app.api.v1.router import api_router
+from app.api.v1.endpoints import health
 
 # Configure logging
 logging.basicConfig(
@@ -82,16 +83,13 @@ async def global_exception_handler(request, exc: Exception) -> JSONResponse:
     )
 
 
-# Health check endpoint
-@app.get("/health", tags=["Health"])
-async def health_check():
-    """Health check endpoint."""
-    return {
-        "status": "healthy",
-        "app": settings.app_name,
-        "version": settings.app_version
-    }
 
+
+# Include health router at root level
+app.include_router(
+    health.router,
+    tags=["Health"]
+)
 
 # Include API router
 app.include_router(

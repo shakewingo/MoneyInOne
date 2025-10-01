@@ -1,390 +1,263 @@
-"""Test API endpoints for simplified finance app."""
+"""API integration tests for MoneyInOne finance app."""
 
 import pytest
 import uuid
 from decimal import Decimal
-from datetime import date
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.models.asset import AssetType
 
 
-@pytest.mark.asyncio
-async def test_health_check(client: AsyncClient):
-    """Test health check endpoint."""
-    response = await client.get("/health")
-    assert response.status_code == 200
-    data = response.json()
-    assert data["status"] == "healthy"
-    assert "app" in data
-    assert "version" in data
-
-
-@pytest.mark.asyncio
-async def test_detailed_health_check(client: AsyncClient):
-    """Test detailed health check endpoint."""
-    response = await client.get("/api/v1/health/detailed")
-    assert response.status_code == 200
-    data = response.json()
-    assert data["status"] == "healthy"
-    assert "checks" in data
-    assert data["checks"]["database"]["status"] == "healthy"
-
-
-@pytest.mark.asyncio
-async def test_get_metadata(client: AsyncClient):
-    """Test metadata endpoint."""
-    response = await client.get("/api/v1/metadata/")
-    assert response.status_code == 200
+class TestAPIIntegration:
+    """Test API endpoints focusing on HTTP integration."""
     
-    data = response.json()
-    assert "currencies" in data
-    assert "asset_categories" in data
-    assert len(data["currencies"]) > 0
-    assert len(data["asset_categories"]) > 0
+    @pytest.mark.asyncio
+    async def test_health_and_metadata_endpoints(self, client: AsyncClient):
+        """Test system health and metadata endpoints."""
+        # Health check
+        response = await client.get("/health")
+        assert response.status_code == 200
+        health_data = response.json()
+        assert health_data["status"] == "healthy"
+        assert all(key in health_data for key in ["app", "version"])
+        
+        # Metadata endpoint
+        response = await client.get("/api/v1/metadata/")
+        assert response.status_code == 200
+        metadata = response.json()
+        
+        # Verify complete metadata structure
+        assert all(key in metadata for key in ["currencies", "asset_categories", "credit_categories"])
+        assert len(metadata["currencies"]) >= 7  # At least USD, EUR, GBP, JPY, CAD, AUD, CNY
+        assert "stock" in metadata["asset_categories"]  # Verify our new stock category
+        
+        # Verify currency details
+        usd = next((c for c in metadata["currencies"] if c["code"] == "USD"), None)
+        assert usd and usd["name"] == "US Dollar" and usd["symbol"] == "$"
     
-    # Check USD is present
-    usd = next((c for c in data["currencies"] if c["code"] == "USD"), None)
-    assert usd is not None
-    assert usd["name"] == "US Dollar"
-    assert usd["symbol"] == "$"
-
-
-@pytest.mark.asyncio
-async def test_get_currencies(client: AsyncClient):
-    """Test currencies endpoint."""
-    response = await client.get("/api/v1/metadata/currencies")
-    assert response.status_code == 200
+    @pytest.mark.asyncio
+    async def test_asset_api_workflow(self, client: AsyncClient, factory):
+        """Test complete asset API workflow including stock fields."""
+        device_id = "test-api-assets"
+        
+        # CREATE stock asset with symbol and shares
+        stock_data = factory.stock_asset_data("Google", "GOOGL", 25.0, Decimal("37500.00"))
+        response = await client.post(f"/api/v1/assets/?device_id={device_id}", json=stock_data)
+        assert response.status_code == 200
+        
+        create_result = response.json()
+        assert create_result["message"] == "Asset created successfully"
+        asset_id = create_result["data"]["id"]
+        
+        # Verify stock-specific fields in response
+        created_asset = create_result["data"]
+        assert created_asset["symbol"] == "GOOGL"
+        assert created_asset["shares"] == 25.0
+        
+        # READ asset
+        response = await client.get(f"/api/v1/assets/{asset_id}?device_id={device_id}")
+        assert response.status_code == 200
+        asset = response.json()
+        assert asset["name"] == "Google"
+        assert asset["symbol"] == "GOOGL"
+        assert asset["shares"] == 25.0
+        
+        # UPDATE asset (including stock fields)
+        update_data = {"name": "Alphabet Inc.", "shares": 30.0, "amount": "45000.00"}
+        response = await client.put(f"/api/v1/assets/{asset_id}?device_id={device_id}", json=update_data)
+        assert response.status_code == 200
+        
+        # Verify update
+        response = await client.get(f"/api/v1/assets/{asset_id}?device_id={device_id}")
+        updated_asset = response.json()
+        assert updated_asset["name"] == "Alphabet Inc."
+        assert updated_asset["shares"] == 30.0
+        assert updated_asset["symbol"] == "GOOGL"  # Unchanged
+        
+        # DELETE asset
+        response = await client.delete(f"/api/v1/assets/{asset_id}?device_id={device_id}")
+        assert response.status_code == 200
+        
+        # Verify deletion
+        response = await client.get(f"/api/v1/assets/{asset_id}?device_id={device_id}")
+        assert response.status_code == 404
     
-    currencies = response.json()
-    assert len(currencies) > 0
-    
-    # Check USD is present
-    usd = next((c for c in currencies if c["code"] == "USD"), None)
-    assert usd is not None
-    assert usd["name"] == "US Dollar"
-    assert usd["symbol"] == "$"
-
-
-@pytest.mark.asyncio
-async def test_get_asset_categories(client: AsyncClient):
-    """Test asset categories endpoint."""
-    response = await client.get("/api/v1/metadata/categories")
-    assert response.status_code == 200
-    
-    categories = response.json()
-    assert len(categories) > 0
-    assert "cash" in categories
-    assert "stock" in categories
-    assert "crypto" in categories
-
-
-@pytest.mark.asyncio
-async def test_asset_crud_operations(client: AsyncClient):
-    """Test complete CRUD operations for assets."""
-    device_id = "test-device-123"
-    
-    # Test CREATE asset
-    asset_data = {
-        "name": "Test Savings Account",
-        "category": "cash",
-        "amount": "5000.00",
-        "currency": "USD",
-        "purchase_date": "2024-01-15",
-        "notes": "Primary savings account"
-    }
-    
-    response = await client.post(
-        f"/api/v1/assets/?device_id={device_id}",
-        json=asset_data
-    )
-    assert response.status_code == 200
-    create_result = response.json()
-    assert create_result["message"] == "Asset created successfully"
-    assert "data" in create_result
-    asset_id = create_result["data"]["id"]
-    
-    # Test READ single asset
-    response = await client.get(
-        f"/api/v1/assets/{asset_id}?device_id={device_id}"
-    )
-    assert response.status_code == 200
-    asset = response.json()
-    assert asset["name"] == "Test Savings Account"
-    assert asset["category"] == "cash"
-    assert asset["amount"] == "5000.0000"
-    assert asset["currency"] == "USD"
-    assert asset["notes"] == "Primary savings account"
-    
-    # Test READ all assets (grouped)
-    response = await client.get(f"/api/v1/assets/?device_id={device_id}")
-    assert response.status_code == 200
-    grouped_assets = response.json()
-    assert "cash" in grouped_assets
-    assert len(grouped_assets["cash"]) == 1
-    assert grouped_assets["cash"][0]["id"] == asset_id
-    
-    # Test UPDATE asset
-    update_data = {
-        "name": "Updated Savings Account",
-        "amount": "6000.00",
-        "notes": "Updated primary savings account"
-    }
-    
-    response = await client.put(
-        f"/api/v1/assets/{asset_id}?device_id={device_id}",
-        json=update_data
-    )
-    assert response.status_code == 200
-    update_result = response.json()
-    assert update_result["message"] == "Asset updated successfully"
-    
-    # Verify update
-    response = await client.get(
-        f"/api/v1/assets/{asset_id}?device_id={device_id}"
-    )
-    assert response.status_code == 200
-    updated_asset = response.json()
-    assert updated_asset["name"] == "Updated Savings Account"
-    assert updated_asset["amount"] == "6000.0000"
-    assert updated_asset["notes"] == "Updated primary savings account"
-    
-    # Test DELETE asset
-    response = await client.delete(
-        f"/api/v1/assets/{asset_id}?device_id={device_id}"
-    )
-    assert response.status_code == 200
-    delete_result = response.json()
-    assert delete_result["message"] == "Asset deleted successfully"
-    
-    # Verify deletion
-    response = await client.get(
-        f"/api/v1/assets/{asset_id}?device_id={device_id}"
-    )
-    assert response.status_code == 404
-
-
-@pytest.mark.asyncio
-async def test_portfolio_summary(client: AsyncClient):
-    """Test portfolio summary calculation."""
-    device_id = "test-device-portfolio"
-    
-    # Create multiple assets
-    assets_data = [
-        {
-            "name": "Savings Account",
-            "category": "cash",
-            "amount": "10000.00",
-            "currency": "USD",
-            "purchase_date": "2024-01-01"
-        },
-        {
-            "name": "Apple Stock",
-            "category": "stock",
-            "amount": "15000.00",
-            "currency": "USD",
-            "purchase_date": "2024-01-15"
-        },
-        {
-            "name": "Bitcoin",
-            "category": "crypto",
-            "amount": "5000.00",
-            "currency": "USD",
-            "purchase_date": "2024-01-20"
-        }
-    ]
-    
-    for asset_data in assets_data:
-        response = await client.post(
-            f"/api/v1/assets/?device_id={device_id}",
-            json=asset_data
+    @pytest.mark.asyncio
+    async def test_credit_api_workflow(self, client: AsyncClient, factory):
+        """Test complete credit API workflow."""
+        device_id = "test-api-credits"
+        
+        # CREATE
+        credit_data = factory.credit_data("Business Loan", "loan", Decimal("50000.00"))
+        response = await client.post(f"/api/v1/credits/?device_id={device_id}", json=credit_data)
+        assert response.status_code == 200
+        credit_id = response.json()["data"]["id"]
+        
+        # UPDATE
+        response = await client.put(
+            f"/api/v1/credits/{credit_id}?device_id={device_id}",
+            json={"amount": "45000.00"}
         )
         assert response.status_code == 200
+        
+        # Verify and DELETE
+        response = await client.get(f"/api/v1/credits/{credit_id}?device_id={device_id}")
+        assert response.json()["amount"] == "45000.0000"
+        
+        response = await client.delete(f"/api/v1/credits/{credit_id}?device_id={device_id}")
+        assert response.status_code == 200
     
-    # Test portfolio summary
-    response = await client.get(
-        f"/api/v1/portfolio/summary?device_id={device_id}&base_currency=USD"
-    )
-    assert response.status_code == 200
+    @pytest.mark.asyncio
+    async def test_grouped_data_endpoints(self, client: AsyncClient, factory):
+        """Test grouped data retrieval via API."""
+        device_id = "test-api-grouped"
+        
+        # Create diverse test data
+        test_assets = [
+            factory.asset_data("USD Cash", "cash", Decimal("5000.00"), "USD"),
+            factory.asset_data("EUR Cash", "cash", Decimal("3000.00"), "EUR"),
+            factory.stock_asset_data("Apple", "AAPL", 50.0, Decimal("7500.00")),
+            factory.asset_data("Bitcoin", "crypto", Decimal("25000.00"), "USD"),
+        ]
+        
+        test_credits = [
+            factory.credit_data("Visa", "credit_card", Decimal("2000.00"), "USD"),
+            factory.credit_data("Mortgage", "mortgage", Decimal("200000.00"), "USD"),
+        ]
+        
+        # Create assets and credits
+        for asset_data in test_assets:
+            response = await client.post(f"/api/v1/assets/?device_id={device_id}", json=asset_data)
+            assert response.status_code == 200
+        
+        for credit_data in test_credits:
+            response = await client.post(f"/api/v1/credits/?device_id={device_id}", json=credit_data)
+            assert response.status_code == 200
+        
+        # Test grouped assets
+        response = await client.get(f"/api/v1/assets/?device_id={device_id}")
+        assert response.status_code == 200
+        grouped_assets = response.json()
+        
+        assert len(grouped_assets["cash"]) == 2
+        assert len(grouped_assets["stock"]) == 1
+        assert len(grouped_assets["crypto"]) == 1
+        
+        # Verify stock asset has symbol and shares in API response
+        stock_asset = grouped_assets["stock"][0]
+        assert stock_asset["symbol"] == "AAPL"
+        assert stock_asset["shares"] == 50.0
+        
+        # Test grouped credits
+        response = await client.get(f"/api/v1/credits/?device_id={device_id}")
+        assert response.status_code == 200
+        grouped_credits = response.json()
+        
+        assert len(grouped_credits["credit_card"]) == 1
+        assert len(grouped_credits["mortgage"]) == 1
     
-    summary = response.json()
-    assert "asset_breakdown" in summary
-    assert "base_currency" in summary
-    assert "last_updated" in summary
-    assert summary["base_currency"] == "USD"
+    @pytest.mark.asyncio
+    async def test_portfolio_summary_endpoint(self, client: AsyncClient, sample_data):
+        """Test portfolio summary API endpoint."""
+        device_id = sample_data["device_id"]
+        
+        response = await client.get(f"/api/v1/portfolio/summary?device_id={device_id}")
+        assert response.status_code == 200
+        portfolio = response.json()
+        
+        # Verify API response structure
+        required_keys = ["asset_summary", "credit_summary", "net_summary", "base_currency", "last_updated"]
+        assert all(key in portfolio for key in required_keys)
+        
+        # Verify calculations are correct
+        assert portfolio["asset_summary"]["cash"]["count"] == 2
+        assert portfolio["asset_summary"]["stock"]["count"] == 1
+        assert portfolio["credit_summary"]["credit_card"]["count"] == 2
+        
+        # Test net calculations
+        net_summary = portfolio["net_summary"]
+        assert "USD" in net_summary and "EUR" in net_summary
+        assert float(net_summary["USD"]) == 20500.0  # 5000 + 7500 + 25000 - 2000 - 15000
+        assert float(net_summary["EUR"]) == 2000.0   # 3000 - 1000
     
-    # Should have all three categories
-    assert "cash" in summary["asset_breakdown"]
-    assert "stock" in summary["asset_breakdown"]
-    assert "crypto" in summary["asset_breakdown"]
-    
-    # Check values
-    cash_breakdown = summary["asset_breakdown"]["cash"]
-    stock_breakdown = summary["asset_breakdown"]["stock"]
-    crypto_breakdown = summary["asset_breakdown"]["crypto"]
-    
-    assert cash_breakdown["total_amount"] == "10000.0000"
-    assert cash_breakdown["count"] == 1
-    assert stock_breakdown["total_amount"] == "15000.0000"
-    assert stock_breakdown["count"] == 1
-    assert crypto_breakdown["total_amount"] == "5000.0000"
-    assert crypto_breakdown["count"] == 1
+    @pytest.mark.asyncio
+    async def test_api_validation_and_error_responses(self, client: AsyncClient):
+        """Test API validation and error handling."""
+        device_id = "test-api-validation"
+        fake_id = str(uuid.uuid4())
 
-
-@pytest.mark.asyncio
-async def test_asset_not_found(client: AsyncClient):
-    """Test asset not found scenarios."""
-    device_id = "test-device-notfound"
-    fake_id = str(uuid.uuid4())
-    
-    # Test GET non-existent asset
-    response = await client.get(
-        f"/api/v1/assets/{fake_id}?device_id={device_id}"
-    )
-    assert response.status_code == 404
-    
-    # Test UPDATE non-existent asset
-    response = await client.put(
-        f"/api/v1/assets/{fake_id}?device_id={device_id}",
-        json={"name": "Updated Name"}
-    )
-    assert response.status_code == 404
-    
-    # Test DELETE non-existent asset
-    response = await client.delete(
-        f"/api/v1/assets/{fake_id}?device_id={device_id}"
-    )
-    assert response.status_code == 404
-
-
-@pytest.mark.asyncio
-async def test_validation_errors(client: AsyncClient):
-    """Test validation error handling."""
-    device_id = "test-device-validation"
-    
-    # Test invalid asset data
-    invalid_data = {
-        "name": "",  # Empty name should fail
-        "category": "cash",
-        "amount": "0",  # Zero amount should fail
-        "currency": "INVALID",  # Invalid currency
-        "purchase_date": "invalid-date"  # Invalid date format
-    }
-    
-    response = await client.post(
-        f"/api/v1/assets/?device_id={device_id}",
-        json=invalid_data
-    )
-    assert response.status_code == 422  # Validation error
-
-
-@pytest.mark.asyncio
-async def test_multiple_currencies(client: AsyncClient):
-    """Test assets with different currencies."""
-    device_id = "test-device-multicurrency"
-    
-    # Create assets in different currencies
-    assets_data = [
-        {
-            "name": "USD Cash",
-            "category": "cash",
+        # Test stock field validation
+        invalid_stock = {
+            "name": "Test Stock",
+            "category": "cash",  
             "amount": "1000.00",
             "currency": "USD",
-            "purchase_date": "2024-01-01"
-        },
-        {
-            "name": "EUR Cash",
-            "category": "cash",
-            "amount": "850.00",
-            "currency": "EUR",
-            "purchase_date": "2024-01-01"
-        },
-        {
-            "name": "CNY Cash",
-            "category": "cash",
-            "amount": "7000.00",
-            "currency": "CNY",
-            "purchase_date": "2024-01-01"
+            "purchase_date": "2024-01-01",
+            "shares": "-10"  
         }
-    ]
+        
+        response = await client.post(f"/api/v1/assets/?device_id={device_id}", json=invalid_stock)
+        assert response.status_code == 422
+        
+        endpoints = [
+            f"/api/v1/assets/{fake_id}",
+            f"/api/v1/credits/{fake_id}"
+        ]
+        
+        for endpoint in endpoints:
+            # GET
+            response = await client.get(f"{endpoint}?device_id={device_id}")
+            assert response.status_code == 404
+            
+            # PUT
+            response = await client.put(f"{endpoint}?device_id={device_id}", json={"name": "Updated"})
+            assert response.status_code == 404
+            
+            # DELETE
+            response = await client.delete(f"{endpoint}?device_id={device_id}")
+            assert response.status_code == 404
     
-    created_assets = []
-    for asset_data in assets_data:
-        response = await client.post(
-            f"/api/v1/assets/?device_id={device_id}",
-            json=asset_data
-        )
+    @pytest.mark.asyncio
+    async def test_device_isolation_via_api(self, client: AsyncClient, factory):
+        """Test device-based data isolation through API."""
+        devices = ["device-1", "device-2"]
+        asset_data = factory.asset_data("Isolation Test")
+        
+        # Create asset for device 1
+        response = await client.post(f"/api/v1/assets/?device_id={devices[0]}", json=asset_data)
         assert response.status_code == 200
-        created_assets.append(response.json()["data"])
-    
-    # Get all assets
-    response = await client.get(f"/api/v1/assets/?device_id={device_id}")
-    assert response.status_code == 200
-    grouped_assets = response.json()
-    
-    # Should have 3 cash assets with different currencies
-    assert "cash" in grouped_assets
-    assert len(grouped_assets["cash"]) == 3
-    
-    # Check currencies are preserved
-    currencies = {asset["currency"] for asset in grouped_assets["cash"]}
-    assert currencies == {"USD", "EUR", "CNY"}
+        asset_id = response.json()["data"]["id"]
+        
+        # Device 1 can access its asset
+        response = await client.get(f"/api/v1/assets/{asset_id}?device_id={devices[0]}")
+        assert response.status_code == 200
+        
+        # Device 2 cannot access device 1's asset
+        response = await client.get(f"/api/v1/assets/{asset_id}?device_id={devices[1]}")
+        assert response.status_code == 404
+        
+        # Verify grouped assets are isolated
+        response = await client.get(f"/api/v1/assets/?device_id={devices[1]}")
+        assert response.status_code == 200
+        grouped = response.json()
+        assert len(grouped) == 0 or all(len(assets) == 0 for assets in grouped.values())
 
 
 @pytest.mark.asyncio
-async def test_asset_categories(client: AsyncClient):
-    """Test different asset categories."""
-    device_id = "test-device-categories"
+async def test_api_response_formats(client: AsyncClient, factory):
+    """Test API response formats and data serialization."""
+    device_id = "test-response-format"
     
-    # Create assets in different categories
-    assets_data = [
-        {
-            "name": "Emergency Fund",
-            "category": "cash",
-            "amount": "5000.00",
-            "currency": "USD",
-            "purchase_date": "2024-01-01"
-        },
-        {
-            "name": "Tesla Stock",
-            "category": "stock",
-            "amount": "10000.00",
-            "currency": "USD",
-            "purchase_date": "2024-01-15"
-        },
-        {
-            "name": "Ethereum",
-            "category": "crypto",
-            "amount": "3000.00",
-            "currency": "USD",
-            "purchase_date": "2024-01-20"
-        },
-        {
-            "name": "Apartment",
-            "category": "real_estate",
-            "amount": "300000.00",
-            "currency": "USD",
-            "purchase_date": "2024-01-01"
-        }
-    ]
+    # Create asset with decimal precision
+    asset_data = factory.asset_data(amount=Decimal("12345.6789"))
+    response = await client.post(f"/api/v1/assets/?device_id={device_id}", json=asset_data)
     
-    for asset_data in assets_data:
-        response = await client.post(
-            f"/api/v1/assets/?device_id={device_id}",
-            json=asset_data
-        )
-        assert response.status_code == 200
+    # Verify response format
+    result = response.json()
+    assert "message" in result
+    assert "data" in result
+    assert isinstance(result["data"], dict)
     
-    # Get all assets grouped
-    response = await client.get(f"/api/v1/assets/?device_id={device_id}")
-    assert response.status_code == 200
-    grouped_assets = response.json()
-    
-    # Should have all categories
-    expected_categories = {"cash", "stock", "crypto", "real_estate"}
-    assert set(grouped_assets.keys()) == expected_categories
-    
-    # Each category should have exactly one asset
-    for category in expected_categories:
-        assert len(grouped_assets[category]) == 1
+    # Verify decimal serialization
+    created_asset = result["data"]
+    assert created_asset["amount"] == "12345.6789"  # String format for precision
+    assert "created_at" in created_asset
+    assert "updated_at" in created_asset

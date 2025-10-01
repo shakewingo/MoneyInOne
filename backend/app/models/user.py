@@ -8,6 +8,7 @@ from app.models.base import BaseModel
 
 if TYPE_CHECKING:
     from app.models.asset import Asset
+    from app.models.credit import Credit
 
 
 class User(BaseModel):
@@ -31,6 +32,13 @@ class User(BaseModel):
     # Relationships
     assets: Mapped[List["Asset"]] = relationship(
         "Asset",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="select"
+    )
+    
+    credits: Mapped[List["Credit"]] = relationship(
+        "Credit",
         back_populates="user",
         cascade="all, delete-orphan",
         lazy="select"

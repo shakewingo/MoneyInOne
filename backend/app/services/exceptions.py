@@ -5,7 +5,6 @@ class ServiceError(Exception):
     """Base exception for service layer errors."""
     pass
 
-
 class ValidationError(ServiceError):
     """Raised when data validation fails."""
     pass
@@ -28,6 +27,11 @@ class AssetTypeNotFoundError(ServiceError):
 
 class ExternalAPIError(ServiceError):
     """Raised when external API calls fail."""
+    pass
+
+
+class CreditNotFoundError(ServiceError):
+    """Raised when a credit is not found."""
     pass
 
 

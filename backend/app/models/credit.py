@@ -1,4 +1,4 @@
-"""Asset-related models for financial tracking."""
+"""Credit-related models for financial tracking."""
 
 import uuid
 from decimal import Decimal
@@ -18,26 +18,26 @@ if TYPE_CHECKING:
     from app.models.user import User
 
 
-class AssetType(BaseModel):
+class CreditType(BaseModel):
     """
-    Asset type definitions for categorization.
+    Credit type definitions for categorization.
     
-    Simple asset type model for basic categorization.
+    Simple credit type model for basic categorization.
     """
     
-    __tablename__ = "asset_types"
+    __tablename__ = "credit_types"
     
     name: Mapped[str] = mapped_column(
         String(100),
         nullable=False,
-        doc="Display name of the asset type"
+        doc="Display name of the credit type"
     )
     
     category: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
         index=True,
-        doc="Category for grouping (cash, stock, crypto, etc.)"
+        doc="Category for grouping (credit_card, loan, mortgage, etc.)"
     )
     
     is_default: Mapped[bool] = mapped_column(
@@ -48,116 +48,95 @@ class AssetType(BaseModel):
     )
     
     # Relationships
-    assets: Mapped[List["Asset"]] = relationship(
-        "Asset",
-        back_populates="asset_type",
+    credits: Mapped[List["Credit"]] = relationship(
+        "Credit",
+        back_populates="credit_type",
         lazy="select"
     )
     
     def __repr__(self) -> str:
         """String representation."""
-        return f"<AssetType(id={self.id}, name={self.name}, category={self.category})>"
+        return f"<CreditType(id={self.id}, name={self.name}, category={self.category})>"
 
 
-class Asset(BaseModel):
+class Credit(BaseModel):
     """
-    Simple asset records for financial tracking.
+    Simple credit records for financial tracking.
     
-    Basic asset model focused on essential financial data.
+    Basic credit model focused on essential financial data.
     """
     
-    __tablename__ = "assets"
+    __tablename__ = "credits"
     
     # Foreign Keys
     user_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
-        doc="Owner of this asset"
+        doc="Owner of this credit"
     )
     
-    asset_type_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("asset_types.id"),
+    credit_type_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("credit_types.id"),
         nullable=False,
         index=True,
-        doc="Type of this asset"
+        doc="Type of this credit"
     )
     
-    # Core Asset Information
+    # Core Credit Information
     name: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
-        doc="User-friendly name of the asset"
+        doc="User-friendly name of the credit"
     )
     
     category: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
         index=True,
-        doc="Asset category (cash, stock, crypto, etc.)"
+        doc="Credit category (credit_card, loan, mortgage, etc.)"
     )
     
     # Financial Information
     amount: Mapped[Decimal] = mapped_column(
         Numeric(15, 4),
         nullable=False,
-        doc="Total amount/value of the asset"
+        doc="Total amount owed/credit balance"
     )
     
     currency: Mapped[str] = mapped_column(
         String(3),
         nullable=False,
-        doc="Currency of the asset (ISO code)"
+        doc="Currency of the credit (ISO code)"
     )
     
-    purchase_date: Mapped[date] = mapped_column(
+    issue_date: Mapped[date] = mapped_column(
         Date,
         nullable=False,
         index=True,
-        doc="Date of purchase/acquisition"
+        doc="Date of credit issue/origination"
     )
     
     # Optional Information
     notes: Mapped[Optional[str]] = mapped_column(
         String(500),
         nullable=True,
-        doc="Optional notes about the asset"
-    )
-    
-    # Stock-specific Information (Optional)
-    symbol: Mapped[Optional[str]] = mapped_column(
-        String(10),
-        nullable=True,
-        doc="Stock symbol (e.g., AAPL, TSLA) - used for stock assets"
-    )
-    
-    shares: Mapped[Optional[float]] = mapped_column(
-        Numeric(15, 6),
-        nullable=True,
-        doc="Number of shares - used for stock assets"
+        doc="Optional notes about the credit"
     )
     
     # Relationships
     user: Mapped["User"] = relationship(
         "User",
-        back_populates="assets",
+        back_populates="credits",
         lazy="select"
     )
     
-    asset_type: Mapped["AssetType"] = relationship(
-        "AssetType",
-        back_populates="assets",
+    credit_type: Mapped["CreditType"] = relationship(
+        "CreditType",
+        back_populates="credits",
         lazy="select"
     )
     
     def __repr__(self) -> str:
         """String representation."""
-        return f"<Asset(id={self.id}, name={self.name}, category={self.category}, amount={self.amount})>"
-
-
-# # Create additional indexes for performance
-# Index('ix_assets_user_id', Asset.user_id)
-# Index('ix_assets_asset_type_id', Asset.asset_type_id)
-# Index('ix_assets_category', Asset.category)
-# Index('ix_assets_purchase_date', Asset.purchase_date)
-# Index('ix_asset_types_category', AssetType.category)
+        return f"<Credit(id={self.id}, name={self.name}, category={self.category}, amount={self.amount})>"

@@ -1,34 +1,37 @@
 """Health check endpoints."""
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 
 from app.core.database import get_db_session
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
-@router.get("/")
+@router.get("/health")
 async def health_check():
     """Basic health check endpoint."""
     return {
         "status": "healthy",
-        "timestamp": datetime.now(datetime.timezone.utc).isoformat(),  # Convert to ISO string
-        "service": "MoneyInOne API"
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "service": "MoneyInOne API",
+        "app": settings.app_name,
+        "version": settings.app_version
     }
 
 
-@router.get("/detailed")
+@router.get("/health/detailed")
 async def detailed_health_check(db: AsyncSession = Depends(get_db_session)):
     """Detailed health check including database connectivity."""
     health_status = {
         "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),  # Convert to ISO string
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "service": "MoneyInOne API",
         "checks": {}
     }

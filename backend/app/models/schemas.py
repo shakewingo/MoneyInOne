@@ -6,7 +6,22 @@ from datetime import date, datetime
 from typing import List, Optional, Dict, Any
 from enum import Enum
 
-from pydantic import BaseModel, Field, validator, ConfigDict
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
+
+
+# Common validation functions
+def validate_positive_amount(v):
+    """Ensure amount is positive."""
+    if v is not None and v <= 0:
+        raise ValueError("Amount must be greater than zero")
+    return v
+
+
+def validate_positive_shares(v):
+    """Ensure shares is positive if provided."""
+    if v is not None and v <= 0:
+        raise ValueError("Shares must be greater than zero")
+    return v
 
 
 # Enums
@@ -16,6 +31,16 @@ class AssetCategory(str, Enum):
     STOCK = "stock"
     CRYPTO = "crypto"
     REAL_ESTATE = "real_estate"
+    BOND = "bond"
+    OTHER = "other"
+
+
+class CreditCategory(str, Enum):
+    """Supported credit categories."""
+    CREDIT_CARD = "credit_card"
+    LOAN = "loan"
+    MORTGAGE = "mortgage"
+    LINE_OF_CREDIT = "line_of_credit"
     OTHER = "other"
 
 
@@ -66,6 +91,17 @@ class AssetTypeResponse(BaseSchema):
     updated_at: datetime
 
 
+# Credit Type Schemas  
+class CreditTypeResponse(BaseSchema):
+    """Schema for credit type response."""
+    id: uuid.UUID
+    name: str
+    category: str
+    is_default: bool
+    created_at: datetime
+    updated_at: datetime
+
+
 # Asset Schemas
 class AssetCreate(BaseSchema):
     """Schema for creating an asset."""
@@ -75,13 +111,20 @@ class AssetCreate(BaseSchema):
     currency: Currency = Field(..., description="Asset currency")
     purchase_date: date = Field(..., description="Purchase date")
     notes: Optional[str] = Field(None, max_length=500, description="Optional notes")
+    symbol: Optional[str] = Field(None, max_length=10, description="Stock symbol (e.g., AAPL) - for stock assets only")
+    shares: Optional[float] = Field(None, gt=0, description="Number of shares - for stock assets only")
     
-    @validator("amount")
-    def validate_positive_amount(cls, v):
+    @field_validator("amount")
+    @classmethod
+    def validate_amount(cls, v):
         """Ensure amount is positive."""
-        if v <= 0:
-            raise ValueError("Amount must be greater than zero")
-        return v
+        return validate_positive_amount(v)
+    
+    @field_validator("shares")
+    @classmethod
+    def validate_shares(cls, v):
+        """Ensure shares is positive if provided."""
+        return validate_positive_shares(v)
 
 
 class AssetUpdate(BaseSchema):
@@ -92,13 +135,31 @@ class AssetUpdate(BaseSchema):
     currency: Optional[Currency] = None
     purchase_date: Optional[date] = None
     notes: Optional[str] = Field(None, max_length=500)
+    symbol: Optional[str] = Field(None, max_length=10, description="Stock symbol (e.g., AAPL) - for stock assets only")
+    shares: Optional[float] = Field(None, gt=0, description="Number of shares - for stock assets only")
     
-    @validator("amount")
-    def validate_positive_amount(cls, v):
+    @field_validator("amount")
+    @classmethod
+    def validate_amount(cls, v):
         """Ensure amount is positive."""
-        if v is not None and v <= 0:
-            raise ValueError("Amount must be greater than zero")
-        return v
+        return validate_positive_amount(v)
+    
+    @field_validator("shares")
+    @classmethod
+    def validate_shares(cls, v):
+        """Ensure shares is positive if provided."""
+        return validate_positive_shares(v)
+    
+    @model_validator(mode='after')
+    def validate_stock_fields(self):
+        """Validate that symbol and shares are only used with stock category."""
+        # For updates, we need to be more careful since category might not be provided
+        if self.category is not None and self.category != AssetCategory.STOCK:
+            if self.symbol is not None:
+                raise ValueError("Symbol can only be specified for stock assets")
+            if self.shares is not None:
+                raise ValueError("Shares can only be specified for stock assets")
+        return self
 
 
 class AssetResponse(BaseSchema):
@@ -111,6 +172,55 @@ class AssetResponse(BaseSchema):
     currency: str
     purchase_date: date
     notes: Optional[str]
+    symbol: Optional[str]
+    shares: Optional[float]
+    created_at: datetime
+    updated_at: datetime
+
+
+# Credit Schemas
+class CreditCreate(BaseSchema):
+    """Schema for creating a credit."""
+    name: str = Field(..., min_length=1, max_length=255, description="Credit name")
+    category: CreditCategory = Field(..., description="Credit category")
+    amount: Decimal = Field(..., gt=0, description="Credit amount owed")
+    currency: Currency = Field(..., description="Credit currency")
+    issue_date: date = Field(..., description="Credit issue/origination date")
+    notes: Optional[str] = Field(None, max_length=500, description="Optional notes")
+    
+    @field_validator("amount")
+    @classmethod
+    def validate_amount(cls, v):
+        """Ensure amount is positive."""
+        return validate_positive_amount(v)
+
+
+class CreditUpdate(BaseSchema):
+    """Schema for updating a credit."""
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    category: Optional[CreditCategory] = None
+    amount: Optional[Decimal] = Field(None, gt=0)
+    currency: Optional[Currency] = None
+    issue_date: Optional[date] = None
+    notes: Optional[str] = Field(None, max_length=500)
+    
+    @field_validator("amount")
+    @classmethod
+    def validate_amount(cls, v):
+        """Ensure amount is positive."""
+        return validate_positive_amount(v)
+
+
+class CreditResponse(BaseSchema):
+    """Schema for credit response."""
+    id: uuid.UUID
+    user_id: uuid.UUID
+    name: str
+    category: str
+    amount: Decimal
+    currency: str
+    issue_date: date
+    notes: Optional[str]
     created_at: datetime
     updated_at: datetime
 
@@ -122,10 +232,18 @@ class AssetBreakdown(BaseSchema):
     count: int = Field(..., ge=0, description="Number of assets in this category")
 
 
+class CreditBreakdown(BaseSchema):
+    """Schema for credit breakdown in portfolio."""
+    total_amount: Decimal = Field(..., description="Total amount owed in original currency")
+    count: int = Field(..., ge=0, description="Number of credits in this category")
+
+
 class PortfolioSummary(BaseSchema):
     """Schema for portfolio summary response."""
     base_currency: str = Field(..., description="Base currency for display")
-    asset_breakdown: Dict[str, AssetBreakdown] = Field(..., description="Breakdown by asset category")
+    asset_summary: Dict[str, AssetBreakdown] = Field(..., description="Breakdown by asset category")
+    credit_summary: Dict[str, CreditBreakdown] = Field(..., description="Breakdown by credit category")
+    net_summary: Dict[str, Decimal] = Field(..., description="Net amounts (assets - credits) by currency")
     last_updated: datetime = Field(..., description="Last calculation timestamp")
 
 
@@ -154,3 +272,4 @@ class MetadataResponse(BaseSchema):
     """Schema for metadata response."""
     currencies: List[CurrencyInfo]
     asset_categories: List[str]
+    credit_categories: List[str]
