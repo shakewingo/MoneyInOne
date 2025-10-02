@@ -26,16 +26,36 @@ final class DeviceIDManager {
     /// Gets the device ID, generating and storing one if it doesn't exist
     ///
     /// - Returns: The device ID string
+//    func getDeviceID() -> String {
+//        // Try to retrieve existing device ID
+//        if let existingID = retrieveFromKeychain() {
+//            return existingID
+//        }
+//        
+//        // Generate new device ID if none exists
+//        let newID = UUID().uuidString
+//        saveToKeychain(newID)
+//        return newID
+//    }
+    
     func getDeviceID() -> String {
-        // Try to retrieve existing device ID
+        // For simulator, use a fixed test device ID
+        #if targetEnvironment(simulator)
+        let testDeviceID = "test_1"
+        print("🧪 Using test device ID for simulator: \(testDeviceID)")
+        return testDeviceID
+        #else
+        // For real devices, use Keychain
         if let existingID = retrieveFromKeychain() {
+            print("📱 Retrieved device ID from Keychain: \(existingID)")
             return existingID
         }
         
-        // Generate new device ID if none exists
         let newID = UUID().uuidString
         saveToKeychain(newID)
+        print("✨ Generated new device ID: \(newID)")
         return newID
+        #endif
     }
     
     /// Resets the device ID (generates a new one)

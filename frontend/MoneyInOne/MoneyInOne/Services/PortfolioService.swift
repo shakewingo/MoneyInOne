@@ -102,7 +102,7 @@ class PortfolioService {
         
         do {
             let response: SuccessResponse = try await apiService.post(
-                endpoint: "/market-data/refresh-prices",
+                endpoint: "/assets/refresh-prices",
                 queryItems: queryItems,
                 headers: headers
             )
@@ -134,7 +134,7 @@ class PortfolioService {
         
         do {
             let response: SuccessResponse = try await apiService.post(
-                endpoint: "/market-data/refresh-price/\(assetId.uuidString)",
+                endpoint: "/assets/\(assetId.uuidString)/refresh-price",
                 queryItems: queryItems,
                 headers: headers
             )

@@ -18,9 +18,7 @@ struct DashboardView: View {
     // MARK: - Initialization
     
     init() {
-        // Temporary placeholder - will be replaced in onAppear
-        let tempCoordinator = AppCoordinator()
-        _viewModel = State(initialValue: DashboardViewModel(coordinator: tempCoordinator))
+        _viewModel = State(initialValue: DashboardViewModel())
     }
     
     // MARK: - Body
@@ -41,12 +39,7 @@ struct DashboardView: View {
             .navigationTitle("Dashboard")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    CurrencyPickerMenu {
-                        // Refresh data when currency changes
-                        Task {
-                            await viewModel.loadPortfolio()
-                        }
-                    }
+                    CurrencyPickerMenu()
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -54,22 +47,33 @@ struct DashboardView: View {
                 }
             }
             .onAppear {
-                // Initialize viewModel with actual coordinator from environment
-                if viewModel.coordinator.deviceID.isEmpty {
-                    viewModel = DashboardViewModel(coordinator: coordinator)
-                }
-                
                 // Load portfolio data
                 Task {
-                    await viewModel.loadPortfolio()
+                    await viewModel.loadPortfolio(
+                        deviceId: coordinator.deviceID,
+                        baseCurrency: coordinator.baseCurrency.rawValue
+                    )
                 }
             }
             .onChange(of: scenePhase) { _, newPhase in
                 // Reload when app becomes active
                 if newPhase == .active && viewModel.portfolioSummary != nil {
                     Task {
-                        await viewModel.loadPortfolio()
+                        await viewModel.loadPortfolio(
+                            deviceId: coordinator.deviceID,
+                            baseCurrency: coordinator.baseCurrency.rawValue
+                        )
                     }
+                }
+            }
+            .onChange(of: coordinator.baseCurrency) { _, newCurrency in
+                // Reload portfolio when currency changes
+                print("💱 DashboardView: Currency changed to \(newCurrency.rawValue), reloading portfolio...")
+                Task {
+                    await viewModel.loadPortfolio(
+                        deviceId: coordinator.deviceID,
+                        baseCurrency: newCurrency.rawValue
+                    )
                 }
             }
         }
@@ -87,7 +91,10 @@ struct DashboardView: View {
         ErrorView(
             error: APIError.serverError(500, message),
             retryAction: {
-                viewModel.retryLoad()
+                viewModel.retryLoad(
+                    deviceId: coordinator.deviceID,
+                    baseCurrency: coordinator.baseCurrency.rawValue
+                )
             }
         )
     }
@@ -126,7 +133,10 @@ struct DashboardView: View {
             .padding()
         }
         .refreshable {
-            await viewModel.refresh()
+            await viewModel.refresh(
+                deviceId: coordinator.deviceID,
+                baseCurrency: coordinator.baseCurrency.rawValue
+            )
         }
     }
     
@@ -135,7 +145,10 @@ struct DashboardView: View {
     private var refreshButton: some View {
         Button(action: {
             Task {
-                await viewModel.refresh()
+                await viewModel.refresh(
+                    deviceId: coordinator.deviceID,
+                    baseCurrency: coordinator.baseCurrency.rawValue
+                )
             }
         }) {
             Image(systemName: "arrow.clockwise")

@@ -46,40 +46,37 @@ class DashboardViewModel {
   // MARK: - Dependencies
 
   private let portfolioService: PortfolioService
-  let coordinator: AppCoordinator
 
   // MARK: - Initialization
 
-  init(
-    coordinator: AppCoordinator,
-    portfolioService: PortfolioService = .shared
-  ) {
-    self.coordinator = coordinator
+  init(portfolioService: PortfolioService = .shared) {
     self.portfolioService = portfolioService
   }
 
   // MARK: - Public Methods
 
   /// Load portfolio data
-  func loadPortfolio() async {
+  func loadPortfolio(deviceId: String, baseCurrency: String) async {
     guard !isLoading else { return }
 
     isLoading = true
     errorMessage = nil
 
     print("🔄 DashboardViewModel: Loading portfolio data...")
+    print("💰 Using currency: \(baseCurrency)")
+    print("📱 Using device ID: \(deviceId)")
 
     do {
       // Fetch portfolio summary
       let summary = try await portfolioService.fetchPortfolioSummary(
-        deviceId: coordinator.deviceID,
-        baseCurrency: coordinator.baseCurrency.rawValue
+        deviceId: deviceId,
+        baseCurrency: baseCurrency
       )
 
       // Fetch grouped assets for top assets list
       let assets = try await portfolioService.fetchGroupedAssets(
-        deviceId: coordinator.deviceID,
-        baseCurrency: coordinator.baseCurrency.rawValue
+        deviceId: deviceId,
+        baseCurrency: baseCurrency
       )
 
       await MainActor.run {
@@ -105,31 +102,32 @@ class DashboardViewModel {
   }
 
   /// Refresh portfolio data (for pull-to-refresh)
-  func refresh() async {
+  func refresh(deviceId: String, baseCurrency: String) async {
     guard !isRefreshing && !isLoading else { return }
 
     isRefreshing = true
     errorMessage = nil
 
     print("🔄 DashboardViewModel: Refreshing portfolio data...")
+    print("💰 Using currency for refresh: \(baseCurrency)")
 
     do {
       // First refresh market prices with base currency
       let refreshResult = try await portfolioService.refreshMarketPrices(
-        deviceId: coordinator.deviceID,
-        baseCurrency: coordinator.baseCurrency.rawValue
+        deviceId: deviceId,
+        baseCurrency: baseCurrency
       )
       print("📊 Market prices refreshed: \(refreshResult.message)")
 
       // Then fetch updated portfolio data
       let summary = try await portfolioService.fetchPortfolioSummary(
-        deviceId: coordinator.deviceID,
-        baseCurrency: coordinator.baseCurrency.rawValue
+        deviceId: deviceId,
+        baseCurrency: baseCurrency
       )
 
       let assets = try await portfolioService.fetchGroupedAssets(
-        deviceId: coordinator.deviceID,
-        baseCurrency: coordinator.baseCurrency.rawValue
+        deviceId: deviceId,
+        baseCurrency: baseCurrency
       )
 
       await MainActor.run {
@@ -155,9 +153,9 @@ class DashboardViewModel {
   }
 
   /// Retry loading after error
-  func retryLoad() {
+  func retryLoad(deviceId: String, baseCurrency: String) {
     Task {
-      await loadPortfolio()
+      await loadPortfolio(deviceId: deviceId, baseCurrency: baseCurrency)
     }
   }
 

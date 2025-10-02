@@ -28,11 +28,11 @@ struct MainTabView: View {
                 .tabItem { Label("Dashboard", systemImage: "chart.pie.fill") }
                 .tag(0)
             
-            AssetsPlaceholder()
+            AssetListView()
                 .tabItem { Label("Assets", systemImage: "wallet.pass.fill") }
                 .tag(1)
             
-            CreditsPlaceholder()
+            CreditListView()
                 .tabItem { Label("Credits", systemImage: "creditcard.fill") }
                 .tag(2)
         }
@@ -40,51 +40,7 @@ struct MainTabView: View {
     }
 }
 
-// MARK: - Placeholder Views (will be replaced in subsequent phases)
-
-struct AssetsPlaceholder: View {
-    var body: some View {
-        NavigationStack {
-            EmptyStateView(
-                icon: "wallet.pass",
-                title: "Assets View",
-                message: "Assets list will be implemented in Phase 2"
-            )
-            .navigationTitle("Assets")
-        }
-    }
-}
-
-struct CreditsPlaceholder: View {
-    var body: some View {
-        NavigationStack {
-            EmptyStateView(
-                icon: "creditcard",
-                title: "Credits View",
-                message: "Credits list will be implemented in Phase 2"
-            )
-            .navigationTitle("Credits")
-        }
-    }
-}
-
-struct InfoRow: View {
-    let label: String
-    let value: String
-    
-    var body: some View {
-        HStack {
-            Text(label)
-                .font(.caption)
-                .foregroundColor(.gray600)
-            Spacer()
-            Text(value)
-                .font(.caption)
-                .fontWeight(.medium)
-                .foregroundColor(.gray900)
-        }
-    }
-}
+// MARK: - Preview
 
 #Preview {
     MainTabView()

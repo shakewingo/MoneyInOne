@@ -15,6 +15,8 @@ enum AssetCategory: String, Codable, CaseIterable, Identifiable {
   case crypto = "crypto"
   case realEstate = "real_estate"
   case bond = "bond"
+  case gold = "gold"
+  case silver = "silver"
   case other = "other"
 
   var id: String { rawValue }
@@ -26,6 +28,8 @@ enum AssetCategory: String, Codable, CaseIterable, Identifiable {
     case .crypto: return "Crypto"
     case .realEstate: return "Real Estate"
     case .bond: return "Bond"
+    case .gold: return "Gold"
+    case .silver: return "Silver"
     case .other: return "Other"
     }
   }
@@ -37,6 +41,8 @@ enum AssetCategory: String, Codable, CaseIterable, Identifiable {
     case .crypto: return "bitcoinsign.circle"
     case .realEstate: return "house.fill"
     case .bond: return "doc.text.fill"
+    case .gold: return "sparkles"
+    case .silver: return "circle.hexagongrid.fill"
     case .other: return "ellipsis.circle"
     }
   }
@@ -48,6 +54,8 @@ enum AssetCategory: String, Codable, CaseIterable, Identifiable {
     case .crypto: return .orange
     case .realEstate: return .purple
     case .bond: return .indigo
+    case .gold: return .yellow
+    case .silver: return .gray
     case .other: return .gray
     }
   }

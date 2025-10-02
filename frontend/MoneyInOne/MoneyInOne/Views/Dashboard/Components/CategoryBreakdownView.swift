@@ -13,35 +13,17 @@ struct CategoryBreakdownView: View {
     // MARK: - Properties
     
     let summary: PortfolioSummary
-    @State private var selectedView: BreakdownType = .assets
-    
-    // MARK: - Breakdown Type
-    
-    enum BreakdownType: String, CaseIterable {
-        case assets = "Assets"
-        case credits = "Credits"
-    }
+    @State private var selectedSegment: String?
     
     // MARK: - Body
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Header with toggle
-            HStack {
-                Text("Portfolio Distribution")
-                    .font(.headline)
-                    .foregroundColor(.gray900)
-                
-                Spacer()
-                
-                Picker("View", selection: $selectedView) {
-                    ForEach(BreakdownType.allCases, id: \.self) { type in
-                        Text(type.rawValue).tag(type)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .frame(width: 180)
-            }
+            // Header (smaller font)
+            Text("Portfolio Distribution")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundColor(.gray900)
             
             // Chart or empty state
             if currentData.isEmpty {
@@ -67,10 +49,12 @@ struct CategoryBreakdownView: View {
                 angularInset: 1.5
             )
             .foregroundStyle(item.color)
+            .opacity(selectedSegment == nil || selectedSegment == item.id ? 1.0 : 0.3)
             .cornerRadius(4)
         }
         .frame(height: 250)
         .chartLegend(.hidden)
+        .chartAngleSelection(value: $selectedSegment)
     }
     
     // MARK: - Legend View
@@ -78,31 +62,47 @@ struct CategoryBreakdownView: View {
     private var legendView: some View {
         VStack(alignment: .leading, spacing: 12) {
             ForEach(currentData) { item in
-                HStack(spacing: 12) {
-                    Circle()
-                        .fill(item.color)
-                        .frame(width: 12, height: 12)
-                    
-                    Text(item.name)
-                        .font(.subheadline)
-                        .foregroundColor(.gray700)
-                    
-                    Spacer()
-                    
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text(CurrencyFormatter.format(
-                            amount: item.amount,
-                            currency: summary.baseCurrency
-                        ))
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.gray900)
-                        
-                        Text("\(item.percentage, specifier: "%.1f")%")
-                            .font(.caption)
-                            .foregroundColor(.gray500)
+                Button(action: {
+                    withAnimation {
+                        if selectedSegment == item.id {
+                            selectedSegment = nil
+                        } else {
+                            selectedSegment = item.id
+                        }
                     }
+                }) {
+                    HStack(spacing: 12) {
+                        Circle()
+                            .fill(item.color)
+                            .frame(width: 12, height: 12)
+                        
+                        Text(item.name)
+                            .font(.subheadline)
+                            .foregroundColor(.gray700)
+                        
+                        Spacer()
+                        
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text(CurrencyFormatter.format(
+                                amount: item.amount,
+                                currency: summary.baseCurrency
+                            ))
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.gray900)
+                            
+                            Text("\(item.percentage, specifier: "%.1f")%")
+                                .font(.caption)
+                                .foregroundColor(.gray500)
+                        }
+                    }
+                    .padding(8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(selectedSegment == item.id ? item.color.opacity(0.1) : Color.clear)
+                    )
                 }
+                .buttonStyle(.plain)
             }
         }
         .padding(.top, 8)
@@ -112,15 +112,15 @@ struct CategoryBreakdownView: View {
     
     private var emptyStateView: some View {
         VStack(spacing: 12) {
-            Image(systemName: selectedView == .assets ? "chart.pie" : "creditcard")
+            Image(systemName: "chart.pie")
                 .font(.system(size: 48))
                 .foregroundColor(.gray400)
             
-            Text("No \(selectedView.rawValue) Yet")
+            Text("No Portfolio Data Yet")
                 .font(.headline)
                 .foregroundColor(.gray600)
             
-            Text("Add your first \(selectedView == .assets ? "asset" : "credit") to see distribution")
+            Text("Add assets or credits to see your portfolio distribution")
                 .font(.caption)
                 .foregroundColor(.gray500)
                 .multilineTextAlignment(.center)
@@ -131,44 +131,43 @@ struct CategoryBreakdownView: View {
     // MARK: - Computed Properties
     
     private var currentData: [ChartDataItem] {
-        let breakdown: [String: (amount: Decimal, color: Color)]
-        let total: Decimal
+        var items: [ChartDataItem] = []
         
-        if selectedView == .assets {
-            breakdown = summary.assetSummary.mapValues { breakdown in
-                let category = AssetCategory(rawValue: breakdown.category ?? "") ?? .other
-                return (breakdown.totalAmount, category.color)
-            }
-            total = summary.totalAssets
-        } else {
-            breakdown = summary.creditSummary.mapValues { breakdown in
-                let category = CreditCategory(rawValue: breakdown.category ?? "") ?? .other
-                return (breakdown.totalAmount, category.color)
-            }
-            total = summary.totalCredits
-        }
+        // Calculate total portfolio value (assets + credits)
+        let total = summary.totalAssets + summary.totalCredits
         
         guard total > 0 else { return [] }
         
-        return breakdown.map { key, value in
-            let percentage = (Double(truncating: value.amount as NSDecimalNumber) / Double(truncating: total as NSDecimalNumber)) * 100
+        // Add asset categories
+        for (categoryKey, categoryBreakdown) in summary.assetSummary {
+            let category = AssetCategory(rawValue: categoryKey) ?? .other
+            let percentage = (Double(truncating: categoryBreakdown.totalAmount as NSDecimalNumber) / Double(truncating: total as NSDecimalNumber)) * 100
             
-            let displayName: String
-            if selectedView == .assets {
-                displayName = (AssetCategory(rawValue: key) ?? .other).displayName
-            } else {
-                displayName = (CreditCategory(rawValue: key) ?? .other).displayName
-            }
-            
-            return ChartDataItem(
-                id: key,
-                name: displayName,
-                amount: value.amount,
+            items.append(ChartDataItem(
+                id: "asset_\(categoryKey)",
+                name: category.displayName,
+                amount: categoryBreakdown.totalAmount,
                 percentage: percentage,
-                color: value.color
-            )
+                color: category.color
+            ))
         }
-        .sorted { $0.amount > $1.amount }
+        
+        // Add credit categories
+        for (categoryKey, categoryBreakdown) in summary.creditSummary {
+            let category = CreditCategory(rawValue: categoryKey) ?? .other
+            let percentage = (Double(truncating: categoryBreakdown.totalAmount as NSDecimalNumber) / Double(truncating: total as NSDecimalNumber)) * 100
+            
+            items.append(ChartDataItem(
+                id: "credit_\(categoryKey)",
+                name: category.displayName,
+                amount: categoryBreakdown.totalAmount,
+                percentage: percentage,
+                color: category.color
+            ))
+        }
+        
+        // Sort by amount (largest first)
+        return items.sorted { $0.amount > $1.amount }
     }
 }
 
@@ -180,22 +179,6 @@ struct ChartDataItem: Identifiable {
     let amount: Decimal
     let percentage: Double
     let color: Color
-}
-
-// MARK: - Extensions for Breakdown
-
-extension AssetBreakdown {
-    var category: String? {
-        // This will be populated from the dictionary key
-        return nil
-    }
-}
-
-extension CreditBreakdown {
-    var category: String? {
-        // This will be populated from the dictionary key
-        return nil
-    }
 }
 
 // MARK: - Preview

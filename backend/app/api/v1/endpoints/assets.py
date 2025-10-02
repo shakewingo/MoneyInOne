@@ -135,8 +135,10 @@ async def refresh_all_prices(
     """Refresh market prices for all market-tracked assets."""
     try:
         finance_service = FinanceService(db)
-        result = await finance_service.refresh_prices(x_device_id, base_currency)
-
+        result = await finance_service.refresh_prices(
+            device_id=x_device_id, 
+            base_currency=base_currency
+        )
         return SuccessResponse(
             message=f"Price refresh completed: {result['updated']} updated, {result['failed']} failed, {result['skipped']} skipped",
             data=result,

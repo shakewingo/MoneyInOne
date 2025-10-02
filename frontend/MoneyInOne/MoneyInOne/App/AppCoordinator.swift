@@ -37,9 +37,10 @@ class AppCoordinator {
     }
     
     func updateBaseCurrency(_ currency: Currency) {
+        print("💱 AppCoordinator: Updating currency from \(baseCurrency.rawValue) to \(currency.rawValue)")
         baseCurrency = currency
         UserDefaults.standard.set(currency.rawValue, forKey: "baseCurrency")
-        print("💰 Base currency updated to: \(currency.rawValue)")
+        print("✅ AppCoordinator: Currency updated and saved to: \(currency.rawValue)")
     }
     
 }

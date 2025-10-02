@@ -547,10 +547,13 @@ class FinanceService:
         default_types = [
             ("Cash", "cash"),
             ("Stock", "stock"),
-            ("Cryptocurrency", "crypto"),
+            ("Crypto", "crypto"),
             ("Real Estate", "real_estate"),
+            ("Bond", "bond"),
+            ("Gold", "gold"),
+            ("Silver", "silver"),
             ("Other", "other"),
-        ]
+            ]
 
         for name, category in default_types:
             result = await self.db.execute(

@@ -27,7 +27,7 @@ struct CurrencyPickerMenu: View {
             )) {
                 ForEach(Currency.allCases) { currency in
                     Label(
-                        title: { Text("\(currency.rawValue) - \(currency.name)") },
+                        title: { Text(currency.rawValue) },
                         icon: { Text(currency.symbol) }
                     )
                     .tag(currency)

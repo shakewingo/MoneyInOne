@@ -19,8 +19,18 @@ enum Currency: String, Codable, CaseIterable, Identifiable {
     
     var id: String { rawValue }
     
-    /// Full currency name
-    var name: String {
+    /// Currency symbol
+    var symbol: String {
+        CurrencyFormatter.symbol(for: rawValue)
+    }
+    
+    /// Display text combining code and name
+    var displayText: String {
+        "\(rawValue)"
+    }
+    
+    /// Human-readable currency name
+    var displayName: String {
         switch self {
         case .CNY: return "Chinese Yuan"
         case .USD: return "US Dollar"
@@ -31,28 +41,17 @@ enum Currency: String, Codable, CaseIterable, Identifiable {
         case .AUD: return "Australian Dollar"
         }
     }
-    
-    /// Currency symbol
-    var symbol: String {
-        CurrencyFormatter.symbol(for: rawValue)
-    }
-    
-    /// Display text combining code and name
-    var displayText: String {
-        "\(rawValue)"
-    }
 }
 
 /// Currency information from API
 struct CurrencyInfo: Codable, Identifiable {
     let code: String
-    let name: String
     let symbol: String
     
     var id: String { code }
     
     var displayText: String {
-        "\(code) - \(name)"
+        "\(code)"
     }
 }
 

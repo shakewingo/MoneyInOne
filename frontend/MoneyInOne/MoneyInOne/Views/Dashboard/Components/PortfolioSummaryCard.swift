@@ -20,7 +20,7 @@ struct PortfolioSummaryCard: View {
             // Header with net worth and last updated
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Total Portfolio Value")
+                    Text("Net Portfolio Value")
                         .font(.headline)
                         .foregroundColor(.gray600)
                     

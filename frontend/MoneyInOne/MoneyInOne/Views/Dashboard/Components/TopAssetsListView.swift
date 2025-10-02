@@ -114,24 +114,41 @@ struct AssetRowView: View {
                     .foregroundColor(.gray900)
                     .lineLimit(1)
                 
-                HStack(spacing: 4) {
+                // For stocks and crypto, show details in a more adaptive layout
+                // For other categories, just show category name
+                if asset.category == .stock || asset.category == .crypto {
+                    VStack(alignment: .leading, spacing: 2) {
+                        // First line: Category • Symbol
+                        HStack(spacing: 4) {
+                            Text(asset.category.displayName)
+                                .font(.caption)
+                                .foregroundColor(.gray500)
+                            
+                            if let symbol = asset.symbol {
+                                Text("•")
+                                    .font(.caption)
+                                    .foregroundColor(.gray400)
+                                Text(symbol)
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.gray600)
+                            }
+                        }
+                        
+                        // Second line: Shares count (if available)
+                        if let shares = asset.shares {
+                            Text("\(shares, specifier: "%.2f") shares")
+                                .font(.caption2)
+                                .foregroundColor(.gray400)
+                        }
+                    }
+                } else {
                     Text(asset.category.displayName)
                         .font(.caption)
                         .foregroundColor(.gray500)
-                    
-                    if let symbol = asset.symbol {
-                        Text("• \(symbol)")
-                            .font(.caption)
-                            .foregroundColor(.gray500)
-                    }
-                    
-                    if let shares = asset.shares {
-                        Text("• \(shares, specifier: "%.2f") shares")
-                            .font(.caption)
-                            .foregroundColor(.gray500)
-                    }
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             
             Spacer()
             
