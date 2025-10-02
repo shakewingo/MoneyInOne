@@ -76,7 +76,7 @@ class AddEditViewModel {
             self.notes = asset.notes ?? ""
             self.symbol = asset.symbol ?? ""
             self.shares = asset.shares.map { String(describing: $0) } ?? ""
-            self.isMarketTracked = asset.isMarketTracked ?? true
+            self.isMarketTracked = asset.isMarketTracked
         } else if let credit = mode.editingCredit {
             self.name = credit.name
             self.selectedCreditCategory = credit.category

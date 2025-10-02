@@ -9,7 +9,13 @@ import Foundation
 
 /// API configuration
 struct APIConfig {
-    static let baseURL = "http://localhost:8000/api/v1"
+    static var baseURL: String {
+        #if targetEnvironment(simulator)
+        return "http://localhost:8000/api/v1"
+        #else
+        return "http://192.168.1.2:8000/api/v1"  // e.g., "http://192.168.1.100:8000/api/v1"
+        #endif
+    }
     static let timeout: TimeInterval = 30
 }
 

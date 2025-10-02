@@ -18,25 +18,38 @@ struct CategoryBreakdownView: View {
     // MARK: - Body
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Header (smaller font)
-            Text("Portfolio Distribution")
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .foregroundColor(.gray900)
-            
-            // Chart or empty state
-            if currentData.isEmpty {
-                emptyStateView
-            } else {
-                chartView
-                legendView
+        GlassCard(style: .standard, shadowStyle: .soft) {
+            VStack(alignment: .leading, spacing: 18) {
+                // Header with icon
+                HStack {
+                    ZStack {
+                        Circle()
+                            .fill(Color.primaryGradient)
+                            .frame(width: 32, height: 32)
+                            .shadow(color: Color.primaryColor.opacity(0.3), radius: 6, x: 0, y: 3)
+                        
+                        Image(systemName: "chart.pie.fill")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                    
+                    Text("Portfolio Distribution")
+                        .font(.headline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.textPrimary)
+                    
+                    Spacer()
+                }
+                
+                // Chart or empty state
+                if currentData.isEmpty {
+                    emptyStateView
+                } else {
+                    chartView
+                    legendView
+                }
             }
         }
-        .padding(20)
-        .background(Color.white)
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 2)
     }
     
     // MARK: - Chart View
@@ -45,25 +58,26 @@ struct CategoryBreakdownView: View {
         Chart(currentData) { item in
             SectorMark(
                 angle: .value("Amount", item.amount),
-                innerRadius: .ratio(0.5),
-                angularInset: 1.5
+                innerRadius: .ratio(0.55),
+                angularInset: 2
             )
             .foregroundStyle(item.color)
-            .opacity(selectedSegment == nil || selectedSegment == item.id ? 1.0 : 0.3)
-            .cornerRadius(4)
+            .opacity(selectedSegment == nil || selectedSegment == item.id ? 1.0 : 0.35)
+            .cornerRadius(5)
         }
-        .frame(height: 250)
+        .frame(height: 280)
         .chartLegend(.hidden)
         .chartAngleSelection(value: $selectedSegment)
+        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: selectedSegment)
     }
     
     // MARK: - Legend View
     
     private var legendView: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             ForEach(currentData) { item in
                 Button(action: {
-                    withAnimation {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                         if selectedSegment == item.id {
                             selectedSegment = nil
                         } else {
@@ -71,61 +85,95 @@ struct CategoryBreakdownView: View {
                         }
                     }
                 }) {
-                    HStack(spacing: 12) {
-                        Circle()
-                            .fill(item.color)
-                            .frame(width: 12, height: 12)
+                    HStack(spacing: 14) {
+                        // Color indicator with glow
+                        ZStack {
+                            Circle()
+                                .fill(item.color)
+                                .frame(width: 14, height: 14)
+                            
+                            if selectedSegment == item.id {
+                                Circle()
+                                    .stroke(item.color, lineWidth: 2)
+                                    .frame(width: 20, height: 20)
+                            }
+                        }
+                        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: selectedSegment)
                         
                         Text(item.name)
                             .font(.subheadline)
-                            .foregroundColor(.gray700)
+                            .fontWeight(selectedSegment == item.id ? .semibold : .regular)
+                            .foregroundColor(.textPrimary)
                         
                         Spacer()
                         
-                        VStack(alignment: .trailing, spacing: 2) {
+                        VStack(alignment: .trailing, spacing: 3) {
                             Text(CurrencyFormatter.format(
                                 amount: item.amount,
                                 currency: summary.baseCurrency
                             ))
                             .font(.subheadline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.gray900)
+                            .fontWeight(.bold)
+                            .foregroundColor(.textPrimary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                             
                             Text("\(item.percentage, specifier: "%.1f")%")
-                                .font(.caption)
-                                .foregroundColor(.gray500)
+                                .font(.caption2)
+                                .fontWeight(.medium)
+                                .foregroundColor(.textSecondary)
                         }
                     }
-                    .padding(8)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
                     .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(selectedSegment == item.id ? item.color.opacity(0.1) : Color.clear)
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(selectedSegment == item.id ? item.color.opacity(0.15) : Color.cardBackgroundSecondary)
                     )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .strokeBorder(
+                                selectedSegment == item.id ? item.color.opacity(0.4) : Color.clear,
+                                lineWidth: 2
+                            )
+                    )
+                    .scaleEffect(selectedSegment == item.id ? 1.02 : 1.0)
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(.top, 8)
+        .padding(.top, 12)
     }
     
     // MARK: - Empty State
     
     private var emptyStateView: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "chart.pie")
-                .font(.system(size: 48))
-                .foregroundColor(.gray400)
+        VStack(spacing: 16) {
+            ZStack {
+                Circle()
+                    .fill(Color.gray200)
+                    .frame(width: 80, height: 80)
+                
+                Image(systemName: "chart.pie")
+                    .font(.system(size: 36))
+                    .foregroundColor(.textTertiary)
+            }
             
-            Text("No Portfolio Data Yet")
-                .font(.headline)
-                .foregroundColor(.gray600)
-            
-            Text("Add assets or credits to see your portfolio distribution")
-                .font(.caption)
-                .foregroundColor(.gray500)
-                .multilineTextAlignment(.center)
+            VStack(spacing: 6) {
+                Text("No Portfolio Data Yet")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.textPrimary)
+                
+                Text("Add assets or credits to see your portfolio distribution")
+                    .font(.caption)
+                    .foregroundColor(.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+            }
         }
-        .frame(height: 250)
+        .frame(height: 280)
+        .frame(maxWidth: .infinity)
     }
     
     // MARK: - Computed Properties

@@ -16,57 +16,73 @@ struct CreditListRowView: View {
     // MARK: - Body
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Header: Name + Currency Badge
-            HStack(spacing: 8) {
-                Text(credit.name)
-                    .font(.headline)
-                    .foregroundColor(.primary)
+        HStack(spacing: 14) {
+            // Category Icon with Gradient Background
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [credit.category.color, credit.category.color.opacity(0.7)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 48, height: 48)
+                    .shadow(color: credit.category.color.opacity(0.3), radius: 8, x: 0, y: 4)
                 
-                // Currency Badge
-                Text(credit.currency)
-                    .font(.caption2)
-                    .fontWeight(.semibold)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(currencyBadgeColor)
-                    .foregroundColor(currencyTextColor)
-                    .cornerRadius(8)
+                Image(systemName: credit.category.iconName)
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(.white)
+            }
+            
+            // Content
+            VStack(alignment: .leading, spacing: 6) {
+                // Header: Name + Currency Badge
+                HStack(spacing: 8) {
+                    Text(credit.name)
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.textPrimary)
+                        .lineLimit(1)
+                    
+                    // Currency Badge
+                    Text(credit.currency)
+                        .font(.caption2)
+                        .fontWeight(.bold)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(
+                            Capsule()
+                                .fill(currencyBadgeColor)
+                        )
+                        .foregroundColor(currencyTextColor)
+                }
                 
-                Spacer()
-            }
-            
-            // Amount (prominently displayed)
-            Text(formatAmount(credit.convertedAmount ?? credit.amount))
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(.red)
-            
-            // Issue Date
-            HStack(spacing: 4) {
-                Image(systemName: "calendar")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                Text("Issued: \(credit.issueDate.formatted(date: .abbreviated, time: .omitted))")
+                // Amount (prominently displayed in red for debt)
+                Text(formatAmount(credit.convertedAmount ?? credit.amount))
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(.dangerColor)
+                
+                // Issue Date
+                Label(credit.issueDate.formatted(date: .abbreviated, time: .omitted), systemImage: "calendar")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.textTertiary)
+                    .labelStyle(.titleOnly)
             }
             
-            // Last Updated
-            HStack(spacing: 4) {
-                Image(systemName: "clock")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                Text("Updated: \(credit.updatedAt.relativeTimeString())")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
+            Spacer()
         }
-        .padding(.vertical, 12)
+        .padding(.vertical, 14)
         .padding(.horizontal, 16)
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+        .background(Color.cardBackground)
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .strokeBorder(Color.borderColor.opacity(0.3), lineWidth: 1)
+        )
+        .shadow(color: Color.cardShadow, radius: 8, x: 0, y: 2)
+        .shadow(color: Color.cardShadow.opacity(0.5), radius: 16, x: 0, y: 6)
     }
     
     // MARK: - Helper Methods

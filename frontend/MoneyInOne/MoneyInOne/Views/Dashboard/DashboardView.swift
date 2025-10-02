@@ -132,6 +132,7 @@ struct DashboardView: View {
             }
             .padding()
         }
+        .background(Color.appBackground)
         .refreshable {
             await viewModel.refresh(
                 deviceId: coordinator.deviceID,

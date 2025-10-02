@@ -55,6 +55,7 @@ struct AssetListView: View {
                     assetsList
                 }
             }
+            .background(Color.appBackground)
             .navigationTitle("Assets")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -118,28 +119,26 @@ struct AssetListView: View {
             ForEach(viewModel.sortedCategories) { category in
                 Section {
                     ForEach(viewModel.assets(for: category)) { asset in
-                        Button {
-                            presentedFormMode = .editAsset(asset)
-                        } label: {
-                            AssetListRowView(asset: asset)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button(role: .destructive) {
-                                assetToDelete = asset
-                                showDeleteAlert = true
-                            } label: {
-                                Label("Delete", systemImage: "trash")
+                        AssetListRowView(asset: asset)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                // Edit action (right-to-left swipe)
+                                Button {
+                                    HapticFeedback.light()
+                                    presentedFormMode = .editAsset(asset)
+                                } label: {
+                                    Label("Edit", systemImage: "pencil")
+                                }
+                                .tint(.blue)
+                                
+                                // Delete action (further right-to-left swipe)
+                                Button(role: .destructive) {
+                                    HapticFeedback.light()
+                                    assetToDelete = asset
+                                    showDeleteAlert = true
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
                             }
-                        }
-                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                            Button {
-                                presentedFormMode = .editAsset(asset)
-                            } label: {
-                                Label("Edit", systemImage: "pencil")
-                            }
-                            .tint(.blue)
-                        }
                     }
                 } header: {
                     categoryHeader(category)

@@ -55,6 +55,7 @@ struct CreditListView: View {
                     creditsList
                 }
             }
+            .background(Color.appBackground)
             .navigationTitle("Credits")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -118,28 +119,26 @@ struct CreditListView: View {
             ForEach(viewModel.sortedCategories) { category in
                 Section {
                     ForEach(viewModel.credits(for: category)) { credit in
-                        Button {
-                            presentedFormMode = .editCredit(credit)
-                        } label: {
-                            CreditListRowView(credit: credit)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button(role: .destructive) {
-                                creditToDelete = credit
-                                showDeleteAlert = true
-                            } label: {
-                                Label("Delete", systemImage: "trash")
+                        CreditListRowView(credit: credit)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                // Edit action (right-to-left swipe)
+                                Button {
+                                    HapticFeedback.light()
+                                    presentedFormMode = .editCredit(credit)
+                                } label: {
+                                    Label("Edit", systemImage: "pencil")
+                                }
+                                .tint(.blue)
+                                
+                                // Delete action (right-to-left swipe)
+                                Button(role: .destructive) {
+                                    HapticFeedback.light()
+                                    creditToDelete = credit
+                                    showDeleteAlert = true
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
                             }
-                        }
-                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                            Button {
-                                presentedFormMode = .editCredit(credit)
-                            } label: {
-                                Label("Edit", systemImage: "pencil")
-                            }
-                            .tint(.blue)
-                        }
                     }
                 } header: {
                     categoryHeader(category)

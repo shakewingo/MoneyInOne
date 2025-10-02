@@ -16,77 +16,86 @@ struct AssetListRowView: View {
     // MARK: - Body
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Header: Name + Currency Badge + Stock Info
-            HStack(spacing: 8) {
-                Text(asset.name)
-                    .font(.headline)
-                    .foregroundColor(.primary)
+        HStack(spacing: 14) {
+            // Category Icon with Gradient Background
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [asset.category.color, asset.category.color.opacity(0.7)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 48, height: 48)
+                    .shadow(color: asset.category.color.opacity(0.3), radius: 8, x: 0, y: 4)
                 
-                // Currency Badge
-                Text(asset.currency)
-                    .font(.caption2)
-                    .fontWeight(.semibold)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(currencyBadgeColor)
-                    .foregroundColor(currencyTextColor)
-                    .cornerRadius(8)
+                Image(systemName: asset.category.iconName)
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(.white)
+            }
+            
+            // Content
+            VStack(alignment: .leading, spacing: 6) {
+                // Header: Name + Currency Badge
+                HStack(spacing: 8) {
+                    Text(asset.name)
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.textPrimary)
+                        .lineLimit(1)
+                    
+                    // Currency Badge
+                    Text(asset.currency)
+                        .font(.caption2)
+                        .fontWeight(.bold)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(
+                            Capsule()
+                                .fill(currencyBadgeColor)
+                        )
+                        .foregroundColor(currencyTextColor)
+                }
                 
-                // Stock/Crypto specific info (symbol and shares)
-                if asset.category == .stock || asset.category == .crypto {
-                    if let symbol = asset.symbol, let shares = asset.shares {
-                        Text("• \(symbol) • \(formatShares(shares))")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                // Amount (prominently displayed)
+                Text(formatAmount(asset.convertedAmount ?? asset.amount))
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(.textPrimary)
+                
+                // Stock/Crypto specific info + Date
+                HStack(spacing: 8) {
+                    // Stock/Crypto info
+                    if asset.category == .stock || asset.category == .crypto {
+                        if let symbol = asset.symbol, let shares = asset.shares {
+                            Label("\(symbol) • \(formatShares(shares))", systemImage: "square.stack.3d.up.fill")
+                                .font(.caption)
+                                .foregroundColor(.textSecondary)
+                                .labelStyle(.titleOnly)
+                        }
                     }
-                }
-                
-                Spacer()
-            }
-            
-            // Amount (prominently displayed)
-            Text(formatAmount(asset.convertedAmount ?? asset.amount))
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(.primary)
-            
-            // Purchase Date
-            HStack(spacing: 4) {
-                Image(systemName: "calendar")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                Text("Purchased: \(asset.purchaseDate.formatted(date: .abbreviated, time: .omitted))")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            
-            // Last Updated
-            if let lastUpdate = asset.lastPriceUpdate {
-                HStack(spacing: 4) {
-                    Image(systemName: "clock")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                    Text("Updated: \(lastUpdate.relativeTimeString())")
+                    
+                    // Purchase Date
+                    Label(asset.purchaseDate.formatted(date: .abbreviated, time: .omitted), systemImage: "calendar")
                         .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            } else {
-                HStack(spacing: 4) {
-                    Image(systemName: "clock")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                    Text("Updated: \(asset.updatedAt.relativeTimeString())")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.textTertiary)
+                        .labelStyle(.titleOnly)
                 }
             }
+            
+            Spacer()
         }
-        .padding(.vertical, 12)
+        .padding(.vertical, 14)
         .padding(.horizontal, 16)
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+        .background(Color.cardBackground)
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .strokeBorder(Color.borderColor.opacity(0.3), lineWidth: 1)
+        )
+        .shadow(color: Color.cardShadow, radius: 8, x: 0, y: 2)
+        .shadow(color: Color.cardShadow.opacity(0.5), radius: 16, x: 0, y: 6)
     }
     
     // MARK: - Helper Methods

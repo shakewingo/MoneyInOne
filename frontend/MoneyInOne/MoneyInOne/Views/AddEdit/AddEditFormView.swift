@@ -29,6 +29,10 @@ struct AddEditFormView: View {
     
     var body: some View {
         ZStack {
+            // Modern background
+            Color.appBackground
+                .ignoresSafeArea()
+            
             Form {
                 // Category Section
                 categorySection
@@ -44,6 +48,7 @@ struct AddEditFormView: View {
                 // Notes Section
                 notesSection
             }
+            .scrollContentBackground(.hidden)
             .navigationTitle(viewModel.mode.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

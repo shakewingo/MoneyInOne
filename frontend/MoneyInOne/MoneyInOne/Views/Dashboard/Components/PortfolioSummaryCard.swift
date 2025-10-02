@@ -3,6 +3,7 @@
 //  MoneyInOne
 //
 //  Created by AI Frontend Master on 2025/10/1.
+//  Updated for UI Modernization on 2025/10/2
 //
 
 import SwiftUI
@@ -12,107 +13,172 @@ struct PortfolioSummaryCard: View {
     // MARK: - Properties
     
     let summary: PortfolioSummary
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var animatedValue: Double = 0
     
     // MARK: - Body
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Header with net worth and last updated
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Net Portfolio Value")
-                        .font(.headline)
-                        .foregroundColor(.gray600)
-                    
-                    Text(CurrencyFormatter.format(
-                        amount: summary.netWorth,
-                        currency: summary.baseCurrency
-                    ))
-                    .font(.system(size: 36, weight: .bold, design: .rounded))
-                    .foregroundColor(.gray900)
-                }
+        GlassCard(style: .prominent, shadowStyle: .prominent) {
+            VStack(alignment: .leading, spacing: 20) {
+                // Header with net worth and last updated
+                headerSection
                 
-                Spacer()
-                
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text("Last updated")
-                        .font(.caption)
-                        .foregroundColor(.gray500)
-                    
-                    Text(summary.lastUpdated.shortRelativeTimeString())
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .foregroundColor(.gray700)
-                }
-            }
-            
-            // Assets, Credits, Net Worth breakdown
-            HStack(spacing: 12) {
-                // Assets
-                SummaryMetricCard(
-                    icon: "chart.line.uptrend.xyaxis",
-                    iconColor: .green,
-                    title: "Assets",
-                    amount: summary.totalAssets,
-                    currency: summary.baseCurrency,
-                    count: summary.totalAssetCount
-                )
-                
-                // Credits
-                SummaryMetricCard(
-                    icon: "creditcard.fill",
-                    iconColor: .red,
-                    title: "Credits",
-                    amount: summary.totalCredits,
-                    currency: summary.baseCurrency,
-                    count: summary.totalCreditCount
-                )
+                // Assets and Credits breakdown
+                metricsSection
             }
         }
-        .padding(20)
-        .background(Color.white)
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 2)
+        .onAppear {
+            animateValue()
+        }
+        .onChange(of: summary.netWorth) { _, _ in
+            animateValue()
+        }
+    }
+    
+    // MARK: - Header Section
+    
+    private var headerSection: some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Net Portfolio Value")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.textSecondary)
+                    .textCase(.uppercase)
+                    .tracking(1.2)
+                
+                Text(CurrencyFormatter.format(
+                    amount: summary.netWorth,
+                    currency: summary.baseCurrency
+                ))
+                .font(.system(size: 42, weight: .bold, design: .rounded))
+                .foregroundColor(.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            }
+            
+            Spacer()
+            
+            VStack(alignment: .trailing, spacing: 6) {
+                Label("Updated", systemImage: "clock.fill")
+                    .font(.caption2)
+                    .foregroundColor(.textTertiary)
+                    .labelStyle(.titleOnly)
+                
+                Text(summary.lastUpdated.shortRelativeTimeString())
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.textSecondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.cardBackgroundSecondary)
+                    .cornerRadius(6)
+            }
+        }
+    }
+    
+    // MARK: - Metrics Section
+    
+    private var metricsSection: some View {
+        HStack(spacing: 12) {
+            // Assets
+            ModernMetricCard(
+                icon: "wallet.pass.fill",
+                iconGradient: Color.successGradient,
+                title: "Assets",
+                amount: summary.totalAssets,
+                currency: summary.baseCurrency,
+                count: summary.totalAssetCount,
+                shadowColor: .successColor
+            )
+            
+            // Credits
+            ModernMetricCard(
+                icon: "creditcard.fill",
+                iconGradient: Color.dangerGradient,
+                title: "Credits",
+                amount: summary.totalCredits,
+                currency: summary.baseCurrency,
+                count: summary.totalCreditCount,
+                shadowColor: .dangerColor
+            )
+        }
+    }
+    
+    // MARK: - Animation
+    
+    private func animateValue() {
+        withAnimation(.spring(response: 0.8, dampingFraction: 0.8)) {
+            animatedValue = Double(truncating: summary.netWorth as NSDecimalNumber)
+        }
     }
 }
 
-// MARK: - Summary Metric Card
+// MARK: - Modern Metric Card
 
-struct SummaryMetricCard: View {
+struct ModernMetricCard: View {
     let icon: String
-    let iconColor: Color
+    let iconGradient: LinearGradient
     let title: String
     let amount: Decimal
     let currency: String
     let count: Int
+    let shadowColor: Color
+    
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.system(size: 16))
-                    .foregroundColor(iconColor)
+        VStack(alignment: .leading, spacing: 14) {
+            // Icon with gradient background
+            HStack(spacing: 10) {
+                ZStack {
+                    Circle()
+                        .fill(iconGradient)
+                        .frame(width: 36, height: 36)
+                        .shadow(color: shadowColor.opacity(0.3), radius: 8, x: 0, y: 4)
+                    
+                    Image(systemName: icon)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                }
                 
                 Text(title)
                     .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(.gray600)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.textSecondary)
             }
             
-            VStack(alignment: .leading, spacing: 4) {
+            // Amount and count
+            VStack(alignment: .leading, spacing: 6) {
                 Text(CurrencyFormatter.format(amount: amount, currency: currency))
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
-                    .foregroundColor(.gray900)
+                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                    .foregroundColor(.textPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
                 
-                Text("\(count) \(count == 1 ? "item" : "items")")
-                    .font(.caption)
-                    .foregroundColor(.gray500)
+                HStack(spacing: 4) {
+                    Image(systemName: "square.stack.3d.up.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(.textTertiary)
+                    
+                    Text("\(count) \(count == 1 ? "item" : "items")")
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                        .foregroundColor(.textTertiary)
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(Color.gray100)
-        .cornerRadius(12)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color.cardBackgroundSecondary)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .strokeBorder(Color.borderColor.opacity(0.5), lineWidth: 1)
+        )
     }
 }
 
