@@ -3,3 +3,11 @@ __pycache__/
 .pytest_cache/
 .coverage
 *.db
+# Environment files - IMPORTANT!
+.env
+.env.local
+.env.*.local
+backend/.env
+
+# Docker volumes
+redis_data/

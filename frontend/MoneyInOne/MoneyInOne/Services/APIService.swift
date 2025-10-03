@@ -22,8 +22,7 @@ enum APIEnvironment {
             return "http://192.168.1.2:8000/api/v1"
             #endif
         case .production:
-            // TODO: Replace with your production backend URL
-            return "https://your-production-api.com/api/v1"
+            return "https://moneyinone-api.onrender.com/api/v1"
         }
     }
 }
@@ -37,6 +36,7 @@ struct APIConfig {
     static let currentEnvironment: APIEnvironment = .development
     
     static var baseURL: String {
+        print("🌐 API URL: \(currentEnvironment.baseURL)")
         return currentEnvironment.baseURL
     }
     

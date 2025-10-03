@@ -12,10 +12,9 @@ class Settings(BaseSettings):
     # Application
     app_name: str = Field(default="MoneyInOne API", description="Application name")
     app_version: str = Field(default="0.1.0", description="Application version")
-    debug: bool = Field(default=False, description="Debug mode")
-    
-    # API Configuration
     api_v1_prefix: str = Field(default="/api/v1", description="API v1 prefix")
+
+    debug: bool = Field(default=False, description="Debug mode")
     allowed_hosts: List[str] = Field(default=["*"], description="Allowed hosts for CORS")
     
     # Database
