@@ -45,8 +45,8 @@ struct CurrencyFormatter {
     static func format(amount: Decimal, currency: String, showSymbol: Bool = true) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = decimalPlaces[currency] ?? 2
-        formatter.minimumFractionDigits = decimalPlaces[currency] ?? 2
+        formatter.maximumFractionDigits = 0  // Show integers only
+        formatter.minimumFractionDigits = 0  // Show integers only
         formatter.groupingSeparator = ","
         formatter.decimalSeparator = "."
         

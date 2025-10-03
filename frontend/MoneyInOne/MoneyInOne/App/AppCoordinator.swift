@@ -17,6 +17,7 @@ class AppCoordinator {
     var initializationError: Error?
     var hasCompletedOnboarding = false  // NEW
     var hasAnyData = false  // NEW
+    var selectedTab: Int = 0  // For programmatic tab navigation
     
     init() {
         self.deviceID = DeviceIDManager.shared.getDeviceID()

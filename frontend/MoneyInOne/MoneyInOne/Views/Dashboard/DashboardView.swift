@@ -125,8 +125,8 @@ struct DashboardView: View {
                     assets: viewModel.topAssets,
                     baseCurrency: summary.baseCurrency,
                     onViewAll: {
-                        // TODO: Navigate to Assets tab
-                        print("📱 Navigate to Assets tab")
+                        // Navigate to Assets tab (tag 1)
+                        coordinator.selectedTab = 1
                     }
                 )
             }

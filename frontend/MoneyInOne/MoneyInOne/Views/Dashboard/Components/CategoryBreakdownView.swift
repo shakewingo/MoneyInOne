@@ -20,19 +20,8 @@ struct CategoryBreakdownView: View {
     var body: some View {
         GlassCard(style: .standard, shadowStyle: .soft) {
             VStack(alignment: .leading, spacing: 18) {
-                // Header with icon
+                // Header
                 HStack {
-                    ZStack {
-                        Circle()
-                            .fill(Color.primaryGradient)
-                            .frame(width: 32, height: 32)
-                            .shadow(color: Color.primaryColor.opacity(0.3), radius: 6, x: 0, y: 3)
-                        
-                        Image(systemName: "chart.pie.fill")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.white)
-                    }
-                    
                     Text("Portfolio Distribution")
                         .font(.headline)
                         .fontWeight(.bold)

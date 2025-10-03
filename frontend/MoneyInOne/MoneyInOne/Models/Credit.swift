@@ -40,11 +40,11 @@ enum CreditCategory: String, Codable, CaseIterable, Identifiable {
     
     var color: Color {
         switch self {
-        case .creditCard: return .red
-        case .loan: return .orange
-        case .mortgage: return .pink
-        case .lineOfCredit: return .yellow
-        case .other: return .gray
+        case .creditCard: return Color(hex: "EF4444")   // Red
+        case .loan: return Color(hex: "F97316")         // Orange
+        case .mortgage: return Color(hex: "F472B6")     // Rose Pink
+        case .lineOfCredit: return Color(hex: "FBBF24") // Yellow
+        case .other: return Color(hex: "A855F7")        // Purple (vibrant, not grey!)
         }
     }
 }

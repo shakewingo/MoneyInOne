@@ -23,7 +23,8 @@ struct TopAssetsListView: View {
             HStack {
                 Text("Top Assets")
                     .font(.headline)
-                    .foregroundColor(.gray900)
+                    .fontWeight(.bold)
+                    .foregroundColor(.textPrimary)
                 
                 Spacer()
                 
@@ -43,9 +44,9 @@ struct TopAssetsListView: View {
             }
         }
         .padding(20)
-        .background(Color.white)
+        .background(Color.cardBackground)
         .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 2)
+        .shadow(color: Color.cardShadow, radius: 10, x: 0, y: 2)
     }
     
     // MARK: - Assets List
@@ -99,17 +100,17 @@ struct AssetRowView: View {
             ZStack {
                 Circle()
                     .fill(asset.category.color.opacity(0.2))
-                    .frame(width: 48, height: 48)
+                    .frame(width: 40, height: 40)
                 
                 Image(systemName: asset.category.iconName)
-                    .font(.system(size: 20))
+                    .font(.system(size: 18))
                     .foregroundColor(asset.category.color)
             }
             
             // Asset info
             VStack(alignment: .leading, spacing: 4) {
                 Text(asset.name)
-                    .font(.subheadline)
+                    .font(.body)
                     .fontWeight(.medium)
                     .foregroundColor(.gray900)
                     .lineLimit(1)
@@ -158,7 +159,7 @@ struct AssetRowView: View {
                     amount: displayAmount,
                     currency: displayCurrency
                 ))
-                .font(.subheadline)
+                .font(.footnote)
                 .fontWeight(.semibold)
                 .foregroundColor(.gray900)
                 

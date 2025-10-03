@@ -10,7 +10,6 @@ import SwiftUI
 /// Main tab view for app navigation
 struct MainTabView: View {
     @Environment(AppCoordinator.self) private var coordinator
-    @State private var selectedTab = 0
     
     var body: some View {
         Group {
@@ -23,7 +22,9 @@ struct MainTabView: View {
     }
     
     private var tabView: some View {
-        TabView(selection: $selectedTab) {
+        @Bindable var coordinator = coordinator
+        
+        return TabView(selection: $coordinator.selectedTab) {
             DashboardView()
                 .tabItem { Label("Dashboard", systemImage: "chart.pie.fill") }
                 .tag(0)

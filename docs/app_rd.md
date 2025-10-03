@@ -1,0 +1,3 @@
+I want to create an end-to-end app which is an financial bookkeeper that tracks an summarize all my assets and credit and net balance.
+
+For now, I only want to be able to add/edit/delete different financial records such as money, stock, crypto, housing etc. Importantly it allows me to choose the currency of the asset/credit and use a default currency like Chinese Yuan/Canadian dollars/US dollars etc to display the total assets in one currency unit at top.

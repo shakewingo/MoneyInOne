@@ -168,7 +168,7 @@ struct CreditListView: View {
             
             Spacer()
             
-            Text("\(viewModel.count(for: category)) records")
+            Text(viewModel.count(for: category) == 1 ? "1 item" : "\(viewModel.count(for: category)) items")
                 .font(.caption)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
@@ -177,6 +177,7 @@ struct CreditListView: View {
                 .foregroundColor(.secondary)
         }
         .padding(.vertical, 4)
+        .textCase(nil)  // Prevent automatic uppercasing by iOS List section headers
     }
     
     // MARK: - Actions

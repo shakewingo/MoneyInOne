@@ -7,16 +7,52 @@
 
 import Foundation
 
+/// API Environment Configuration
+enum APIEnvironment {
+    case development
+    case production
+    
+    var baseURL: String {
+        switch self {
+        case .development:
+            #if targetEnvironment(simulator)
+            return "http://localhost:8000/api/v1"
+            #else
+            // For testing on physical device with local network
+            return "http://192.168.1.2:8000/api/v1"
+            #endif
+        case .production:
+            // TODO: Replace with your production backend URL
+            return "https://your-production-api.com/api/v1"
+        }
+    }
+}
+
 /// API configuration
 struct APIConfig {
+    // MARK: - Configuration
+    
+    /// Current environment - Change this to switch between dev and prod
+    /// Set to .production before App Store submission
+    static let currentEnvironment: APIEnvironment = .development
+    
     static var baseURL: String {
-        #if targetEnvironment(simulator)
-        return "http://localhost:8000/api/v1"
-        #else
-        return "http://192.168.1.2:8000/api/v1"  // e.g., "http://192.168.1.100:8000/api/v1"
-        #endif
+        return currentEnvironment.baseURL
     }
+    
     static let timeout: TimeInterval = 30
+    
+    // MARK: - Helper Methods
+    
+    /// Check if running in development mode
+    static var isDevelopment: Bool {
+        return currentEnvironment == .development
+    }
+    
+    /// Check if running in production mode
+    static var isProduction: Bool {
+        return currentEnvironment == .production
+    }
 }
 
 /// API errors

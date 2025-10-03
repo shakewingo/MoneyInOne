@@ -42,17 +42,15 @@ struct PortfolioSummaryCard: View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Net Portfolio Value")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.textSecondary)
-                    .textCase(.uppercase)
-                    .tracking(1.2)
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .foregroundColor(.textPrimary)
                 
                 Text(CurrencyFormatter.format(
                     amount: summary.netWorth,
                     currency: summary.baseCurrency
                 ))
-                .font(.system(size: 42, weight: .bold, design: .rounded))
+                .font(.system(size: 32, weight: .bold, design: .rounded))
                 .foregroundColor(.textPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
@@ -135,11 +133,11 @@ struct ModernMetricCard: View {
                 ZStack {
                     Circle()
                         .fill(iconGradient)
-                        .frame(width: 36, height: 36)
+                        .frame(width: 32, height: 32)
                         .shadow(color: shadowColor.opacity(0.3), radius: 8, x: 0, y: 4)
                     
                     Image(systemName: icon)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.white)
                 }
                 
@@ -152,7 +150,7 @@ struct ModernMetricCard: View {
             // Amount and count
             VStack(alignment: .leading, spacing: 6) {
                 Text(CurrencyFormatter.format(amount: amount, currency: currency))
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundColor(.textPrimary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)

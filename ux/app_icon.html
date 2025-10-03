@@ -1,0 +1,55 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MoneyInOne Icon</title>
+<style>
+  body {
+    background: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+  }
+  /* Icon container */
+  .icon {
+    width: 200px;
+    height: 200px;
+    border-radius: 30px;
+    /* Pure green gradient background */
+    background: linear-gradient(135deg, #6BCF9E 0%, #34A67A 100%);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* Wallet SVG scaling */
+  .icon svg.wallet {
+    width: 60%;
+    height: 60%;
+  }
+  /* Dollar sign styling */
+  .icon span.dollar {
+    position: absolute;
+    top: 15%;
+    right: 20%;
+    font-size: 72px;
+    font-weight: 700;
+    color: #E6BE8A; /* Champagne gold */
+    font-family: Arial, Helvetica, sans-serif;
+  }
+</style>
+</head>
+<body>
+<div class="icon">
+  <!-- Wallet icon -->
+  <svg class="wallet" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="#FFFFFF" d="M0 3a2 2 0 0 1 2-2h13.5a.5.5 0 0 1 0 1H15v2a1 1 0 0 1 1 1v8.5a1.5 1.5 0 0 1-1.5 1.5h-12A2.5 2.5 0 0 1 0 12.5zm1 1.732V12.5A1.5 1.5 0 0 0 2.5 14h12a.5.5 0 0 0 .5-.5V5H2a2 2 0 0 1-1-.268M1 3a1 1 0 0 0 1 1h12V2H2a1 1 0 0 0-1 1"/>
+  </svg>
+  <!-- Dollar sign -->
+  <span class="dollar">$</span>
+</div>
+</body>
+</html>

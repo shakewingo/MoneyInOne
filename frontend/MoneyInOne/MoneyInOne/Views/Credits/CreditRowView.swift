@@ -16,7 +16,7 @@ struct CreditListRowView: View {
     // MARK: - Body
     
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 12) {
             // Category Icon with Gradient Background
             ZStack {
                 Circle()
@@ -27,20 +27,20 @@ struct CreditListRowView: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 48, height: 48)
+                    .frame(width: 40, height: 40)
                     .shadow(color: credit.category.color.opacity(0.3), radius: 8, x: 0, y: 4)
                 
                 Image(systemName: credit.category.iconName)
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.white)
             }
             
             // Content
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
                 // Header: Name + Currency Badge
                 HStack(spacing: 8) {
                     Text(credit.name)
-                        .font(.headline)
+                        .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundColor(.textPrimary)
                         .lineLimit(1)
@@ -60,25 +60,42 @@ struct CreditListRowView: View {
                 
                 // Amount (prominently displayed in red for debt)
                 Text(formatAmount(credit.convertedAmount ?? credit.amount))
-                    .font(.title3)
+                    .font(.body)
                     .fontWeight(.bold)
                     .foregroundColor(.dangerColor)
                 
-                // Issue Date
-                Label(credit.issueDate.formatted(date: .abbreviated, time: .omitted), systemImage: "calendar")
-                    .font(.caption)
+                // Dates: Issue + Updated
+                HStack(spacing: 8) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "calendar")
+                            .font(.system(size: 9))
+                        Text(credit.issueDate.formatted(date: .abbreviated, time: .omitted))
+                            .font(.caption2)
+                    }
                     .foregroundColor(.textTertiary)
-                    .labelStyle(.titleOnly)
+                    
+                    Text("•")
+                        .font(.caption2)
+                        .foregroundColor(.textTertiary.opacity(0.5))
+                    
+                    HStack(spacing: 4) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 9))
+                        Text("Updated \(credit.updatedAt.shortRelativeTimeString())")
+                            .font(.caption2)
+                    }
+                    .foregroundColor(.textTertiary)
+                }
             }
             
             Spacer()
         }
-        .padding(.vertical, 14)
-        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .padding(.horizontal, 12)
         .background(Color.cardBackground)
-        .cornerRadius(16)
+        .cornerRadius(12)
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 12)
                 .strokeBorder(Color.borderColor.opacity(0.3), lineWidth: 1)
         )
         .shadow(color: Color.cardShadow, radius: 8, x: 0, y: 2)

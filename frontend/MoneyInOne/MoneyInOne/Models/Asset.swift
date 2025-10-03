@@ -49,14 +49,14 @@ enum AssetCategory: String, Codable, CaseIterable, Identifiable {
 
   var color: Color {
     switch self {
-    case .cash: return .green
-    case .stock: return .blue
-    case .crypto: return .orange
-    case .realEstate: return .purple
-    case .bond: return .indigo
-    case .gold: return .yellow
-    case .silver: return .gray
-    case .other: return .gray
+    case .cash: return Color(hex: "10B981")        // Emerald Green
+    case .stock: return Color(hex: "3B82F6")       // Sky Blue
+    case .crypto: return Color(hex: "F59E0B")      // Amber Orange
+    case .realEstate: return Color(hex: "8B5CF6")  // Violet Purple
+    case .bond: return Color(hex: "6366F1")        // Indigo Blue
+    case .gold: return Color(hex: "FCD34D")        // Golden Yellow
+    case .silver: return Color(hex: "06B6D4")      // Cyan (vibrant, not grey!)
+    case .other: return Color(hex: "EC4899")       // Pink (vibrant, not grey!)
     }
   }
 }
