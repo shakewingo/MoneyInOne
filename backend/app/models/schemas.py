@@ -245,11 +245,11 @@ class AssetUpdate(BaseSchema):
     def validate_stock_fields(self):
         """Validate that symbol and shares are only used with stock category."""
         # For updates, we need to be more careful since category might not be provided
-        if self.category is not None and self.category != AssetCategory.STOCK:
+        if self.category is not None and self.category not in (AssetCategory.STOCK, AssetCategory.CRYPTO):
             if self.symbol is not None:
-                raise ValueError("Symbol can only be specified for stock assets")
+                raise ValueError("Symbol can only be specified for stock or crypto assets")
             if self.shares is not None:
-                raise ValueError("Shares can only be specified for stock assets")
+                raise ValueError("Shares can only be specified for stock or crypto assets")
         return self
 
 
