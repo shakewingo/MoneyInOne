@@ -2,11 +2,11 @@
 
 import uuid
 from decimal import Decimal
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import List, Optional, Dict, Any, TYPE_CHECKING
 
 from sqlalchemy import (
-    String, Numeric, Date, DateTime, Boolean, ForeignKey,
+    String, Numeric, Date, DateTime, func, Boolean, ForeignKey,
     Index, UniqueConstraint, Text, ARRAY
 )
 from sqlalchemy.dialects.postgresql import JSONB
@@ -150,8 +150,9 @@ class Asset(BaseModel):
     )
     
     last_price_update: Mapped[Optional[datetime]] = mapped_column(
-        DateTime,
-        nullable=True,
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
         doc="Timestamp of last update like price updates"
     )
     
