@@ -354,3 +354,12 @@ services:
 volumes:
   postgres_data:
 ```
+
+## 10. Bug Fixing
+One of the most critical feature in this app is auto currency conversion. Specifically, it auto-calculates the near to real-time asset/credit price based on their original currency and convert it to the chosen currency user selects. The original currency is what was stored as "currency" in db, and the chose currency is the one selected by user in frontend page.
+
+The app should leverage the cached result if they are within the TTL and validate to be used. 
+
+In dashboard page, all amount is converted based on the chosen currency, including total assets/credit, portfolio distribution per asset type and top asset per id. For example, if user stores stock "AAPL" for 3 shares and USD, and the chosen currency is RMB, the app should first see if 3 shares USD info is available in cache, as well as its market price (USD) per share and the exchange rate from USD to RMB is available, if so, convert based on # of shares * market_price (USD) * exchange_rate to get the converted amount per id. However, when switching to Assets/Credits page, DO NOT need to consider exchange rate, just calculated it's current marketplace price on its original currency and display some details info as what it is.
+
+PAY ATTENTION THAT - the order of convention calculation is that if both symbol and shares is available per asset/credit, use it first, otherwise, use its original_amount to finish the convension.

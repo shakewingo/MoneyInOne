@@ -42,7 +42,10 @@ class AddEditViewModel {
     /// Whether stock-specific fields are required
     var requiresStockFields: Bool {
         guard mode.isAssetMode else { return false }
-        return selectedAssetCategory == .stock || selectedAssetCategory == .crypto
+        return selectedAssetCategory == .stock ||
+               selectedAssetCategory == .crypto ||
+               selectedAssetCategory == .gold ||
+               selectedAssetCategory == .silver
     }
     
     /// Whether this is an asset form
@@ -85,6 +88,13 @@ class AddEditViewModel {
             self.date = credit.issueDate
             self.notes = credit.notes ?? ""
         }
+
+        // Enforce USD for stock/crypto/gold/silver at initialization time
+        if mode.isAssetMode {
+            if selectedAssetCategory == .stock || selectedAssetCategory == .crypto || selectedAssetCategory == .gold || selectedAssetCategory == .silver {
+                self.currency = .USD
+            }
+        }
     }
     
     // MARK: - Validation
@@ -114,7 +124,7 @@ class AddEditViewModel {
         if requiresStockFields {
             let trimmedSymbol = symbol.trimmingCharacters(in: .whitespaces)
             if trimmedSymbol.isEmpty {
-                validationErrors["symbol"] = "Symbol is required for stocks and crypto"
+                validationErrors["symbol"] = "Symbol is required"
             }
             
             guard let sharesValue = Double(shares.trimmingCharacters(in: .whitespaces)) else {

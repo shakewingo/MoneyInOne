@@ -69,7 +69,7 @@ class AssetService {
         // Validate stock-specific fields
         if asset.category == .stock || asset.category == .crypto {
             guard asset.symbol != nil, !asset.symbol!.isEmpty else {
-                throw APIError.validationError("Symbol is required for stock and crypto assets")
+                throw APIError.validationError("Symbol is required")
             }
             guard asset.shares != nil, asset.shares! > 0 else {
                 throw APIError.validationError("Shares must be greater than 0 for stock and crypto assets")

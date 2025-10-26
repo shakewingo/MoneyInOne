@@ -1,20 +1,19 @@
 import requests
 
-def test_alpha_vantage(api_key: str, symbol: str = "AAPL"):
+def test_alpha_vantage(api_key: str, symbol: str = "GLD"):
     # Alpha Vantage API endpoint for stock quotes
     url = "https://www.alphavantage.co/query"
     
     # Parameters for the API request
     params = {
-        "function": "TIME_SERIES_INTRADAY",
+        "function": "GLOBAL_QUOTE",
         "symbol": symbol,
-        "interval": "5min",
-        "apikey": api_key
+        "apikey": api_key,
     }
     
     try:
         # Make the API request
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, timeout=15)
         response.raise_for_status()  # Raise an error for bad responses
         
         # Parse the JSON response
@@ -34,4 +33,4 @@ def test_alpha_vantage(api_key: str, symbol: str = "AAPL"):
         print(f"An error occurred: {e}")
 
 # Replace 'YOUR_API_KEY' with your actual Alpha Vantage API key
-test_alpha_vantage(api_key="MY_API_KEY")
+test_alpha_vantage(api_key="JJZ0GGL8ZMCGIME9")

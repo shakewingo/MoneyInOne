@@ -187,6 +187,17 @@ class AssetCreate(BaseSchema):
         """Ensure shares is positive if provided."""
         return validate_positive_shares(v)
 
+    @model_validator(mode="after")
+    def enforce_usd_for_stock_crypto(self):
+        """Ensure stock/crypto assets use USD only.
+
+        Raises:
+            ValueError: If category is stock/crypto and currency is not USD
+        """
+        if self.category in (AssetCategory.STOCK, AssetCategory.CRYPTO, AssetCategory.GOLD, AssetCategory.SILVER) and self.currency != Currency.USD:
+            raise ValueError("Stock and crypto assets must use USD currency")
+        return self
+
 
 class AssetUpdate(BaseSchema):
     """Schema for updating an asset."""
@@ -243,13 +254,14 @@ class AssetUpdate(BaseSchema):
 
     @model_validator(mode="after")
     def validate_stock_fields(self):
-        """Validate that symbol and shares are only used with stock category."""
-        # For updates, we need to be more careful since category might not be provided
-        if self.category is not None and self.category not in (AssetCategory.STOCK, AssetCategory.CRYPTO):
+        """Allow symbol/shares for stock, crypto, gold, and silver; forbid otherwise when category provided."""
+        # For updates, category might not be provided; only enforce when present
+        allowed = (AssetCategory.STOCK, AssetCategory.CRYPTO, AssetCategory.GOLD, AssetCategory.SILVER)
+        if self.category is not None and self.category not in allowed:
             if self.symbol is not None:
-                raise ValueError("Symbol can only be specified for stock or crypto assets")
+                raise ValueError("Symbol can only be specified for stock, crypto, gold, or silver assets")
             if self.shares is not None:
-                raise ValueError("Shares can only be specified for stock or crypto assets")
+                raise ValueError("Shares can only be specified for stock, crypto, gold, or silver assets")
         return self
 
 

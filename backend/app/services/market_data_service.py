@@ -139,7 +139,7 @@ class MarketDataService:
     async def _fetch_exchange_rate(
         self, from_currency: str, to_currency: str
     ) -> Optional[Decimal]:
-        """Fetch exchange rate from Alpha Vantage (also works for crypto and commodities)."""
+        """Fetch exchange rate from Alpha Vantage (also works for crypto and commodities except previous metal)."""
         params = {
             "function": "CURRENCY_EXCHANGE_RATE",
             "from_currency": from_currency,
@@ -292,8 +292,8 @@ class MarketDataService:
         price_fetchers = {
             "stock": self.get_stock_price,
             "crypto": self.get_crypto_price,
-            "gold": lambda _: self.get_commodity_price("gold"),
-            "silver": lambda _: self.get_commodity_price("silver"),
+            "gold": self.get_stock_price,
+            "silver": self.get_stock_price,
         }
 
         fetch_func = price_fetchers.get(category)

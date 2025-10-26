@@ -96,6 +96,32 @@ struct AddEditFormView: View {
                             .tag(category)
                     }
                 }
+                .onChange(of: viewModel.selectedAssetCategory) { _, newValue in
+                    switch newValue {
+                    case .gold:
+                        viewModel.symbol = "GLD"
+                        viewModel.currency = .USD
+                    case .silver:
+                        viewModel.symbol = "SLV"
+                        viewModel.currency = .USD
+                    case .stock, .crypto:
+                        viewModel.symbol = "" 
+                        viewModel.currency = .USD
+                    default:
+                        // Ensure auto-filled GLD/SLV doesn't persist when switching to other categories
+                        if viewModel.symbol == "GLD" || viewModel.symbol == "SLV" { viewModel.symbol = "" }
+                        break
+                    }
+                }
+                if viewModel.selectedAssetCategory == .stock || viewModel.selectedAssetCategory == .crypto ||
+                    viewModel.selectedAssetCategory == .gold || viewModel.selectedAssetCategory == .silver {
+                    HStack(spacing: 6) {
+                        Image(systemName: "info.circle")
+                        Text("For stock/crypto/precious metals, support tracking based on USD only.")
+                    }
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                }
             } else {
                 Picker("Category", selection: $viewModel.selectedCreditCategory) {
                     ForEach(CreditCategory.allCases) { category in
@@ -123,8 +149,16 @@ struct AddEditFormView: View {
                 }
             }
             
-            // Currency
-            CurrencyPickerView(selectedCurrency: $viewModel.currency)
+            // Currency (auto USD for stock/crypto/gold/silver)
+            if viewModel.isAssetMode && (viewModel.selectedAssetCategory == .stock || viewModel.selectedAssetCategory == .crypto || viewModel.selectedAssetCategory == .gold || viewModel.selectedAssetCategory == .silver) {
+                HStack {
+                    Text("Currency")
+                    Spacer()
+                    Text("USD").foregroundColor(.secondary)
+                }
+            } else {
+                CurrencyPickerView(selectedCurrency: $viewModel.currency)
+            }
             
             // Amount
             VStack(alignment: .leading, spacing: 4) {
@@ -168,7 +202,12 @@ struct AddEditFormView: View {
             
             // Shares
             VStack(alignment: .leading, spacing: 4) {
-                TextField("Number of Shares", text: $viewModel.shares)
+                TextField(
+                    (viewModel.selectedAssetCategory == .gold || viewModel.selectedAssetCategory == .silver)
+                    ? "Ounces (oz)"
+                    : "Number of Shares",
+                    text: $viewModel.shares
+                )
                     .keyboardType(.decimalPad)
                 if let error = viewModel.validationErrors["shares"] {
                     Text(error)
@@ -180,9 +219,14 @@ struct AddEditFormView: View {
             // Track Market Value Toggle
             Toggle("Track Market Value", isOn: $viewModel.isMarketTracked)
         } header: {
-            Text("Stock/Crypto Details")
+            Text("Details")
         } footer: {
-            Text("Enter the ticker symbol and number of shares/coins you own. Enable market tracking to automatically update prices.")
+            HStack(spacing: 6) {
+                Image(systemName: "info.circle")
+                Text("Enable market tracking to automatically update prices. (Recommended)")
+            }
+            .font(.caption)
+            .foregroundColor(.secondary)
         }
     }
     

@@ -315,3 +315,33 @@ async def test_api_response_formats(client: AsyncClient, factory):
         assert response.status_code == 200
         result = response.json()
         assert f"Asset {asset_id} price updated successfully" == result["message"]
+
+    @pytest.mark.asyncio
+    async def test_usd_only_for_stock_crypto_on_create(self, client: AsyncClient, factory):
+        """Stock/Crypto assets must use USD currency on create."""
+        device_id = "test-usd-only"
+
+        # Non-USD stock should fail
+        stock_eur = factory.stock_asset_data("Apple", "AAPL", 10.0, Decimal("1500.00"))
+        stock_eur["currency"] = "EUR"
+        response = await client.post(f"/api/v1/assets/?device_id={device_id}", json=stock_eur)
+        assert response.status_code == 422
+        assert "must use USD currency" in response.text
+
+        # USD stock should succeed
+        stock_usd = factory.stock_asset_data("Apple", "AAPL", 10.0, Decimal("1500.00"))
+        response = await client.post(f"/api/v1/assets/?device_id={device_id}", json=stock_usd)
+        assert response.status_code == 200
+
+        # Non-USD crypto should fail
+        crypto_gbp = factory.asset_data("Bitcoin", "crypto", Decimal("1000.00"), "GBP")
+        crypto_gbp.update({"symbol": "BTC", "shares": 0.05, "is_market_tracked": True})
+        response = await client.post(f"/api/v1/assets/?device_id={device_id}", json=crypto_gbp)
+        assert response.status_code == 422
+        assert "must use USD currency" in response.text
+
+        # USD crypto should succeed
+        crypto_usd = factory.asset_data("Bitcoin", "crypto", Decimal("1000.00"), "USD")
+        crypto_usd.update({"symbol": "BTC", "shares": 0.05, "is_market_tracked": True})
+        response = await client.post(f"/api/v1/assets/?device_id={device_id}", json=crypto_usd)
+        assert response.status_code == 200
