@@ -58,8 +58,8 @@ struct CreditListRowView: View {
                         .foregroundColor(currencyTextColor)
                 }
                 
-                // Amount (prominently displayed in red for debt)
-                Text(formatAmount(credit.convertedAmount ?? credit.amount))
+                // Amount (prominently displayed in red for debt) - always original currency/amount
+                Text(formatAmount(credit.amount))
                     .font(.body)
                     .fontWeight(.bold)
                     .foregroundColor(.dangerColor)

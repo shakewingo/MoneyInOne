@@ -4,6 +4,7 @@ import uuid
 import logging
 from typing import List, Dict
 from fastapi import APIRouter, Depends, HTTPException, Query, Header
+from fastapi import Body
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db_session
@@ -146,6 +147,30 @@ async def refresh_all_prices(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Price refresh failed: {str(e)}")
 
+
+@router.post("/refresh-prices/assets", response_model=SuccessResponse)
+async def refresh_specific_assets_prices(
+    asset_ids: List[str] = Body(..., description="List of asset IDs to refresh"),
+    x_device_id: str = Header(..., description="Device ID for user identification"),
+    db: AsyncSession = Depends(get_db_session),
+    base_currency: str = Query(
+        "USD", description="Base currency for amount conversion"
+    ),
+):
+    """Refresh market prices for a specific list of assets."""
+    try:
+        finance_service = FinanceService(db)
+        result = await finance_service.refresh_prices(
+            device_id=x_device_id,
+            asset_ids=[uuid.UUID(a) for a in asset_ids],
+            base_currency=base_currency,
+        )
+        return SuccessResponse(
+            message=f"Price refresh completed for {len(asset_ids)} assets: {result['updated']} updated, {result['failed']} failed, {result['skipped']} skipped",
+            data=result,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Price refresh failed: {str(e)}")
 
 @router.post("/{asset_id}/refresh-price", response_model=SuccessResponse)
 async def refresh_single_asset_price(

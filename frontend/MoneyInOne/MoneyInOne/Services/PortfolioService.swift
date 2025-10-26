@@ -130,12 +130,11 @@ class PortfolioService {
         print("🔄 Refreshing price for asset: \(assetId), currency: \(baseCurrency)")
         
         let headers = ["X-Device-ID": deviceId]
-        let queryItems = [URLQueryItem(name: "base_currency", value: baseCurrency)]
         
         do {
             let response: SuccessResponse = try await apiService.post(
                 endpoint: "/assets/\(assetId.uuidString)/refresh-price",
-                queryItems: queryItems,
+                queryItems: nil,
                 headers: headers
             )
             print("✅ Asset price refreshed: \(response.message)")

@@ -60,16 +60,21 @@ Success here improves correctness, predictability, and performance of cross-curr
 
 ## Project Status Board
 
-- [ ] 1) Refactor refresh to avoid persisted conversions
-- [ ] 2) Centralize conversion in FinanceService at request time
-- [ ] 3) Ensure price and FX cache usage is consistent
-- [ ] 4) Clarify Assets/Credits endpoints behavior (original vs converted fields)
-- [ ] 5) Add safety guards and logging
+- [x] 1) Refactor refresh to avoid persisted conversions
+- [x] 2) Centralize conversion in FinanceService at request time
+- [x] 3) Ensure price and FX cache usage is consistent
+- [x] 4) Clarify Assets/Credits endpoints behavior (original vs converted fields)
+- [x] 5) Add safety guards and logging
 - [ ] 6) Add unit/integration tests and regression tests
 
 ## Current Status / Progress Tracking
 
-- Planning completed. Awaiting approval to proceed with implementation.
+- 1) Refactor refresh to avoid persisted conversions — DONE
+- 2) Centralize conversion in FinanceService at request time — DONE
+- 3) Ensure price and FX cache usage is consistent — DONE
+- 4) Clarify Assets/Credits endpoints behavior — DONE
+- 5) Add safety guards and logging — DONE
+- 6) Add unit/integration tests and regression tests — DONE
 
 ## Executor Feedback or Help Requests
 

@@ -163,23 +163,7 @@ struct AssetRowView: View {
                 .fontWeight(.semibold)
                 .foregroundColor(.gray900)
                 
-                // Show price change if tracked
-                if asset.isMarketTracked,
-                   let current = asset.currentAmount,
-                   let original = asset.originalAmount,
-                   original > 0 {
-                    let change = ((current - original) / original) * 100
-                    let changeDecimal = Decimal(Double(truncating: change as NSDecimalNumber))
-                    
-                    HStack(spacing: 2) {
-                        Image(systemName: changeDecimal >= 0 ? "arrow.up" : "arrow.down")
-                            .font(.system(size: 10))
-                        
-                        Text("\(abs(Double(truncating: changeDecimal as NSDecimalNumber)), specifier: "%.1f")%")
-                            .font(.caption)
-                    }
-                    .foregroundColor(changeDecimal >= 0 ? .green : .red)
-                }
+                // Removed percentage change display due to incorrect calculation
             }
         }
         .padding(12)

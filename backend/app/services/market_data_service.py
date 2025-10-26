@@ -292,8 +292,8 @@ class MarketDataService:
         price_fetchers = {
             "stock": self.get_stock_price,
             "crypto": self.get_crypto_price,
-            "gold": self.get_stock_price,
-            "silver": self.get_stock_price,
+            "gold": self.get_commodity_price,
+            "silver": self.get_commodity_price,
         }
 
         fetch_func = price_fetchers.get(category)
@@ -305,17 +305,11 @@ class MarketDataService:
         if not market_price:
             return False, None, None
 
-        # Calculate current amount
+        # Calculate current amount in the asset's native/original currency
         current_amount = market_price * Decimal(str(shares))
 
-        # TODO: potential bug, if currency is CAD but stock's currentcy is USD and base_currency is CNY, need 2 times conversion
-        if currency != base_currency:
-            exchange_rate = await self.get_exchange_rate(currency, base_currency)
-            if exchange_rate:
-                current_amount = current_amount * exchange_rate
-            else:
-                logger.warning(f"Failed to convert {currency} to {base_currency}")
-
+        # IMPORTANT: Do not convert to base currency here. Conversion must happen
+        # at request time within FinanceService to avoid double conversions.
         return True, market_price, current_amount
 
     async def update_multiple_assets(

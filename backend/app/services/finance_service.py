@@ -80,6 +80,9 @@ class FinanceService:
 
                 if exchange_rate:
                     converted_amount = amount * exchange_rate
+                    logger.info(
+                        f"Converted {amount} {from_currency} -> {converted_amount} {to_currency} @ rate {exchange_rate}"
+                    )
                     return converted_amount, exchange_rate
                 else:
                     logger.warning(
@@ -124,9 +127,15 @@ class FinanceService:
                 grouped_items[category] = []
                 category_totals[category] = Decimal("0")
 
-            # Convert amount to base currency
+            # Compute native amount (symbol * shares * price if available; else original_amount/amount)
+            native_amount = await self._compute_native_amount(item)
+            logger.debug(
+                f"Computed native amount for item {getattr(item, 'id', None)}: {native_amount} {item.currency}"
+            )
+
+            # Convert native amount to base currency once
             converted_amount, conversion_rate = await self._convert_to_base_currency(
-                item.amount, item.currency, base_currency
+                native_amount, item.currency, base_currency
             )
 
             # Create response with conversion data
@@ -176,9 +185,10 @@ class FinanceService:
         for item in items:
             category = item.category
 
-            # Convert to base currency
+            # Compute native amount and convert to base currency
+            native_amount = await self._compute_native_amount(item)
             converted_amount, _ = await self._convert_to_base_currency(
-                item.amount, item.currency, base_currency
+                native_amount, item.currency, base_currency
             )
 
             # Update category aggregates
@@ -639,7 +649,7 @@ class FinanceService:
                 }
             )
 
-        # Fetch market data
+        # Fetch market data (prices are in the asset's native/original currency)
         async with MarketDataService() as market_service:
             price_results = await market_service.update_multiple_assets(
                 assets_data, base_currency
@@ -659,12 +669,12 @@ class FinanceService:
             logger.info(f"Obtained asset {asset_id}: market_price: {market_price}")
 
             if success:
-                # Initialize original_amount if not set
+                # Initialize original_amount if not set; keep it immutable afterwards
                 if asset.original_amount is None:
                     asset.original_amount = asset.amount
 
+                # Update current market value in native currency only
                 asset.current_amount = current_amount
-                asset.amount = current_amount
                 asset.last_price_update = datetime.now(timezone.utc)
                 updated_count += 1
 
@@ -680,6 +690,37 @@ class FinanceService:
             "failed": failed_count,
             "skipped": skipped_count,
         }
+
+    async def _compute_native_amount(self, item: Union[Asset, Credit]) -> Decimal:
+        """Compute the item's amount in its native/original currency.
+
+        Order-of-operations:
+        - If symbol and shares are available (market-tracked assets):
+          native_amount = shares * market_price(symbol) using cached price fetchers.
+        - Else: native_amount = original_amount if available, else amount.
+        """
+        # Credits have no symbol/shares; fall back directly
+        symbol = getattr(item, "symbol", None)
+        shares = getattr(item, "shares", None)
+        category = getattr(item, "category", None)
+
+        if symbol and shares and category in {"stock", "crypto", "gold", "silver"}:
+            try:
+                async with MarketDataService() as market_service:
+                    if category == "stock":
+                        price = await market_service.get_stock_price(symbol)
+                    elif category == "crypto":
+                        price = await market_service.get_crypto_price(symbol)
+                    elif category in {"gold", "silver"}:
+                        price = await market_service.get_commodity_price(category)
+                    else:
+                        price = None
+
+                if price is not None:
+                    return price * Decimal(str(shares))
+            except Exception as e:
+                logger.warning(f"Failed to compute native amount via market price for {symbol}: {e}")
+        return item.amount
 
     async def refresh_single_asset_price(
         self, asset_id: uuid.UUID, device_id: str
