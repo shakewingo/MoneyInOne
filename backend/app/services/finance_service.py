@@ -703,8 +703,9 @@ class FinanceService:
         symbol = getattr(item, "symbol", None)
         shares = getattr(item, "shares", None)
         category = getattr(item, "category", None)
+        is_market_tracked = getattr(item, "is_market_tracked", None)
 
-        if symbol and shares and category in {"stock", "crypto", "gold", "silver"}:
+        if is_market_tracked and symbol and shares and category in {"stock", "crypto", "gold", "silver"}:
             try:
                 async with MarketDataService() as market_service:
                     if category == "stock":
