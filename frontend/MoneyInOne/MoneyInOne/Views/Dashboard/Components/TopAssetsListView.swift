@@ -87,7 +87,7 @@ struct AssetRowView: View {
     let baseCurrency: String
     
     private var displayAmount: Decimal {
-        asset.convertedAmount ?? asset.amount
+        asset.convertedAmount ?? asset.displayAmount
     }
     
     private var displayCurrency: String {

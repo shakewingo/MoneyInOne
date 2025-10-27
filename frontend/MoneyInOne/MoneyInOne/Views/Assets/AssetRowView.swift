@@ -58,8 +58,8 @@ struct AssetListRowView: View {
                         .foregroundColor(currencyTextColor)
                 }
                 
-                // Amount (prominently displayed) - always original currency/amount
-                Text(formatAmount(asset.amount))
+                // Amount (prominently displayed) - use displayAmount which prioritizes currentAmount
+                Text(formatAmount(asset.displayAmount))
                     .font(.body)
                     .fontWeight(.bold)
                     .foregroundColor(.textPrimary)

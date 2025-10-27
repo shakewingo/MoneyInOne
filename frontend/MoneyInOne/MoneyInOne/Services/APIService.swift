@@ -33,7 +33,7 @@ struct APIConfig {
     
     /// Current environment - Change this to switch between dev and prod
     /// Set to .production before App Store submission
-    static let currentEnvironment: APIEnvironment = .development
+    static let currentEnvironment: APIEnvironment = .production
     
     static var baseURL: String {
         print("🌐 API URL: \(currentEnvironment.baseURL)")

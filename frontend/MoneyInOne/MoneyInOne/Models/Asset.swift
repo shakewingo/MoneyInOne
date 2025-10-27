@@ -81,6 +81,11 @@ struct Asset: Identifiable, Codable {
   var conversionRate: Decimal?
   let createdAt: Date
   let updatedAt: Date
+  
+  /// Computed property that returns currentAmount if available, otherwise falls back to amount
+  var displayAmount: Decimal {
+    return currentAmount ?? amount
+  }
 
   enum CodingKeys: String, CodingKey {
     case id, name, category, amount, currency, notes, symbol, shares

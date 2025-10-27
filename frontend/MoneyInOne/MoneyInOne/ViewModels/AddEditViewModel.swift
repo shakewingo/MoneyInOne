@@ -73,7 +73,8 @@ class AddEditViewModel {
         if let asset = mode.editingAsset {
             self.name = asset.name
             self.selectedAssetCategory = asset.category
-            self.amount = String(describing: asset.amount)
+            // Use displayAmount which prioritizes currentAmount over amount
+            self.amount = String(describing: asset.displayAmount)
             self.currency = Currency(rawValue: asset.currency) ?? .CNY
             self.date = asset.purchaseDate
             self.notes = asset.notes ?? ""
@@ -83,7 +84,8 @@ class AddEditViewModel {
         } else if let credit = mode.editingCredit {
             self.name = credit.name
             self.selectedCreditCategory = credit.category
-            self.amount = String(describing: credit.amount)
+            // Use displayAmount for consistency (though credits just return amount)
+            self.amount = String(describing: credit.displayAmount)
             self.currency = Currency(rawValue: credit.currency) ?? .CNY
             self.date = credit.issueDate
             self.notes = credit.notes ?? ""
@@ -196,14 +198,14 @@ class AddEditViewModel {
             let update = AssetUpdate(
                 name: name.trimmingCharacters(in: .whitespaces),
                 category: selectedAssetCategory,
-                amount: amountValue,
+                amount: nil, // Don't update the original amount
                 currency: currency.rawValue,
                 purchaseDate: normalizeDate(date),
                 notes: notes.isEmpty ? nil : notes,
                 symbol: requiresStockFields ? symbol : nil,
                 shares: requiresStockFields ? Double(shares) : nil,
                 isMarketTracked: requiresStockFields ? isMarketTracked : nil,
-                currentAmount: nil,
+                currentAmount: amountValue, // Update currentAmount with the new value
                 originalAmount: nil
             )
             

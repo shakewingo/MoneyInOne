@@ -64,6 +64,11 @@ struct Credit: Identifiable, Codable {
     let createdAt: Date
     let updatedAt: Date
     
+    /// Computed property that returns amount (credits don't have currentAmount)
+    var displayAmount: Decimal {
+        return amount
+    }
+    
     enum CodingKeys: String, CodingKey {
         case id, name, category, amount, currency, notes
         case userId = "user_id"
