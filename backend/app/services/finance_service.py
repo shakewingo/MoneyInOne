@@ -712,7 +712,7 @@ class FinanceService:
                     elif category == "crypto":
                         price = await market_service.get_crypto_price(symbol)
                     elif category in {"gold", "silver"}:
-                        price = await market_service.get_commodity_price(category)
+                        price = await market_service.get_stock_price(category)
                     else:
                         price = None
 

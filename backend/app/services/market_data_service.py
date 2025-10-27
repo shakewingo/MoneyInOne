@@ -292,8 +292,8 @@ class MarketDataService:
         price_fetchers = {
             "stock": self.get_stock_price,
             "crypto": self.get_crypto_price,
-            "gold": self.get_commodity_price,
-            "silver": self.get_commodity_price,
+            "gold": self.get_stock_price,
+            "silver": self.get_stock_price,
         }
 
         fetch_func = price_fetchers.get(category)
