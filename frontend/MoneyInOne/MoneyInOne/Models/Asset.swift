@@ -73,8 +73,6 @@ struct Asset: Identifiable, Codable {
   var notes: String?
   var symbol: String?
   var shares: Double?
-  var originalAmount: Decimal?
-  var currentAmount: Decimal?
   var lastPriceUpdate: Date?
   var isMarketTracked: Bool
   var convertedAmount: Decimal?
@@ -84,15 +82,13 @@ struct Asset: Identifiable, Codable {
   
   /// Computed property that returns currentAmount if available, otherwise falls back to amount
   var displayAmount: Decimal {
-    return currentAmount ?? amount
+    return amount
   }
 
   enum CodingKeys: String, CodingKey {
     case id, name, category, amount, currency, notes, symbol, shares
     case userId = "user_id"
     case purchaseDate = "purchase_date"
-    case originalAmount = "original_amount"
-    case currentAmount = "current_amount"
     case lastPriceUpdate = "last_price_update"
     case isMarketTracked = "is_market_tracked"
     case convertedAmount = "converted_amount"
@@ -132,15 +128,11 @@ struct AssetUpdate: Codable {
   let symbol: String?
   let shares: Double?
   let isMarketTracked: Bool?
-  let currentAmount: Decimal?
-  let originalAmount: Decimal?
 
   enum CodingKeys: String, CodingKey {
     case name, category, amount, currency, notes, symbol, shares
     case purchaseDate = "purchase_date"
     case isMarketTracked = "is_market_tracked"
-    case currentAmount = "current_amount"
-    case originalAmount = "original_amount"
   }
 }
 

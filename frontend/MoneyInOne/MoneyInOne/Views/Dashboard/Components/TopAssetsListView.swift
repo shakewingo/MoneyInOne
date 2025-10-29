@@ -188,8 +188,7 @@ struct AssetRowView: View {
                 notes: nil,
                 symbol: "BTC",
                 shares: 0.5,
-                originalAmount: 30000,
-                currentAmount: 32450,
+                
                 lastPriceUpdate: Date(),
                 isMarketTracked: true,
                 convertedAmount: 32450,
@@ -208,8 +207,7 @@ struct AssetRowView: View {
                 notes: nil,
                 symbol: "AAPL",
                 shares: 150,
-                originalAmount: 27000,
-                currentAmount: 28750,
+                
                 lastPriceUpdate: Date(),
                 isMarketTracked: true,
                 convertedAmount: 28750,
@@ -228,8 +226,7 @@ struct AssetRowView: View {
                 notes: nil,
                 symbol: nil,
                 shares: nil,
-                originalAmount: nil,
-                currentAmount: nil,
+                
                 lastPriceUpdate: nil,
                 isMarketTracked: false,
                 convertedAmount: 50000,

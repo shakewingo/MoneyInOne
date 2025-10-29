@@ -19,7 +19,7 @@ enum APIEnvironment {
             return "http://localhost:8000/api/v1"
             #else
             // For testing on physical device with local network
-            return "http://192.168.1.2:8000/api/v1"
+            return "http://192.168.10.108:8000/api/v1"
             #endif
         case .production:
             return "https://moneyinone-api.onrender.com/api/v1"

@@ -221,12 +221,6 @@ class AssetUpdate(BaseSchema):
     is_market_tracked: Optional[bool] = Field(
         None, description="Whether this asset supports real-time price updates"
     )
-    current_amount: Optional[Decimal] = Field(
-        None, gt=0, description="Current market value"
-    )
-    original_amount: Optional[Decimal] = Field(
-        None, gt=0, description="Original purchase amount"
-    )
 
     @field_validator("amount")
     @classmethod
@@ -240,17 +234,7 @@ class AssetUpdate(BaseSchema):
         """Ensure shares is positive if provided."""
         return validate_positive_shares(v)
 
-    @field_validator("current_amount")
-    @classmethod
-    def validate_current_amount(cls, v):
-        """Ensure current amount is positive if provided."""
-        return validate_positive_amount(v)
-
-    @field_validator("original_amount")
-    @classmethod
-    def validate_original_amount(cls, v):
-        """Ensure original amount is positive if provided."""
-        return validate_positive_amount(v)
+    # Removed fields: current_amount, original_amount
 
     @model_validator(mode="after")
     def validate_stock_fields(self):
@@ -278,9 +262,7 @@ class AssetResponse(BaseSchema):
     notes: Optional[str]
     symbol: Optional[str]
     shares: Optional[float]
-    # Market data fields
-    original_amount: Optional[Decimal]
-    current_amount: Optional[Decimal]
+    # Market data fields removed: original_amount, current_amount
     last_price_update: Optional[datetime]
     is_market_tracked: bool
     converted_amount: Optional[Decimal] = Field(

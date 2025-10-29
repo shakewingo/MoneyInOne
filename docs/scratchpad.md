@@ -1,2 +1,0 @@
-TODO:
-Group assets per same category + symbol. Specifically, in Top Asset List, the should show the asset group's total converted amount, and in Asset/Credit page, same converted amount as title which can breakdown to each individual record that indicates its share, amount and currency

@@ -6,6 +6,9 @@ Backend API for MoneyInOne - a simple web-based financial asset tracker that all
 
 ---
 
+## **Architecture**
+- See architecture and workflows: [docs/architecture.md](./architecture.md)
+
 ## **1. Core Requirements from UX Analysis**
 
 ### **1.1 Asset Types Supported**

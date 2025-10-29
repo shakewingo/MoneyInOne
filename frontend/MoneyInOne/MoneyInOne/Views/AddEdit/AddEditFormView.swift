@@ -291,8 +291,7 @@ struct AddEditFormView: View {
         notes: "Tech investment",
         symbol: "AAPL",
         shares: 150,
-        originalAmount: 25000.00,
-        currentAmount: 28950.00,
+        
         lastPriceUpdate: Date(),
         isMarketTracked: true,
         convertedAmount: 28950.00,

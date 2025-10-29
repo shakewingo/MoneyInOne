@@ -137,17 +137,7 @@ class Asset(BaseModel):
         doc="Number of shares/quantity - used for stock assets"
     )
     
-    original_amount: Mapped[Optional[Decimal]] = mapped_column(
-        Numeric(15, 4),
-        nullable=True,
-        doc="Original purchase amount (preserved for comparison)"
-    )
-    
-    current_amount: Mapped[Optional[Decimal]] = mapped_column(
-        Numeric(15, 4),
-        nullable=True,
-        doc="Current market value (calculated from market_price * shares)"
-    )
+    # Deprecated fields removed: original_amount, current_amount
     
     last_price_update: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True),

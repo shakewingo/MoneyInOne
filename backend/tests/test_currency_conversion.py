@@ -1,9 +1,9 @@
 """Tests for currency conversion correctness and refresh semantics.
 
 These tests validate:
-- Order-of-operations: symbol × shares × market_price, else fallback to original_amount
+- Order-of-operations: symbol × shares × market_price, else fallback to amount
 - Single conversion at request time using cached exchange rates
-- Refresh does not overwrite original amount; only updates current_amount
+- Refresh updates the persisted amount to the latest market-derived value
 """
 
 import uuid
@@ -115,8 +115,8 @@ async def test_order_of_operations_and_currency_switch(monkeypatch, service: Fin
 
 
 @pytest.mark.asyncio
-async def test_refresh_does_not_overwrite_amount(monkeypatch, service: FinanceService):
-    """Refresh updates current_amount only; amount (original currency) remains unchanged."""
+async def test_refresh_updates_amount_to_market_value(monkeypatch, service: FinanceService):
+    """Refresh updates the stored amount to shares×price when market-tracked."""
     device_id = "refresh-amount"
     asset = AssetCreate(
         name="Tracked Stock",
@@ -140,12 +140,11 @@ async def test_refresh_does_not_overwrite_amount(monkeypatch, service: FinanceSe
 
     monkeypatch.setattr(fs_module, "MarketDataService", fake_factory)
 
-    # Run refresh; current_amount should become 3*200=600 (native USD), amount should remain 300
+    # Run refresh; amount should become 3*200=600 (native USD)
     await service.refresh_prices(device_id, [asset_id], base_currency="USD")
 
     # Read back
     updated = await service.get_asset_by_id(asset_id, device_id)
-    assert updated.amount == Decimal("300.00")
-    assert updated.current_amount == Decimal("600")
+    assert updated.amount == Decimal("600")
 
 

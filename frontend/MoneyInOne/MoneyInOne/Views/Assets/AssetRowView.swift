@@ -174,8 +174,7 @@ struct AssetListRowView: View {
         notes: "Primary savings",
         symbol: nil,
         shares: nil,
-        originalAmount: nil,
-        currentAmount: nil,
+        
         lastPriceUpdate: nil,
         isMarketTracked: false,
         convertedAmount: 25480.00,
@@ -198,8 +197,7 @@ struct AssetListRowView: View {
         notes: "Tech investment",
         symbol: "AAPL",
         shares: 150,
-        originalAmount: 25000.00,
-        currentAmount: 28950.00,
+        
         lastPriceUpdate: Date().addingTimeInterval(-15 * 60),
         isMarketTracked: true,
         convertedAmount: 28950.00,
@@ -222,8 +220,7 @@ struct AssetListRowView: View {
         notes: "Crypto investment",
         symbol: "BTC",
         shares: 0.5,
-        originalAmount: 20000.00,
-        currentAmount: 21500.00,
+        
         lastPriceUpdate: Date().addingTimeInterval(-5 * 60),
         isMarketTracked: true,
         convertedAmount: 21500.00,

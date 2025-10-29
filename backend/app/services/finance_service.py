@@ -127,7 +127,7 @@ class FinanceService:
                 grouped_items[category] = []
                 category_totals[category] = Decimal("0")
 
-            # Compute native amount (symbol * shares * price if available; else original_amount/amount)
+            # Compute native amount (symbol * shares * price if available; else amount)
             native_amount = await self._compute_native_amount(item)
             logger.debug(
                 f"Computed native amount for item {getattr(item, 'id', None)}: {native_amount} {item.currency}"
@@ -280,7 +280,6 @@ class FinanceService:
             symbol=asset_data.symbol,
             shares=asset_data.shares,
             is_market_tracked=asset_data.is_market_tracked,
-            original_amount=asset_data.amount,
             last_price_update=datetime.now(timezone.utc),
         )
 
@@ -669,16 +668,12 @@ class FinanceService:
             logger.info(f"Obtained asset {asset_id}: market_price: {market_price}")
 
             if success:
-                # Initialize original_amount if not set; keep it immutable afterwards
-                if asset.original_amount is None:
-                    asset.original_amount = asset.amount
-
-                # Update current market value in native currency only
-                asset.current_amount = current_amount
+                # Compute new amount and persist if changed
+                if current_amount is not None and asset.amount != current_amount:
+                    asset.amount = current_amount
                 asset.last_price_update = datetime.now(timezone.utc)
                 updated_count += 1
-
-                logger.info(f"Updated asset {asset_id}: -> {current_amount}")
+                logger.info(f"Updated asset {asset_id} amount -> {current_amount}")
             else:
                 failed_count += 1
                 logger.warning(f"Failed to update price for asset {asset_id}")
@@ -697,7 +692,7 @@ class FinanceService:
         Order-of-operations:
         - If symbol and shares are available (market-tracked assets):
           native_amount = shares * market_price(symbol) using cached price fetchers.
-        - Else: native_amount = original_amount if available, else amount.
+        - Else: native_amount = amount.
         """
         # Credits have no symbol/shares; fall back directly
         symbol = getattr(item, "symbol", None)

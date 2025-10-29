@@ -73,7 +73,7 @@ class AddEditViewModel {
         if let asset = mode.editingAsset {
             self.name = asset.name
             self.selectedAssetCategory = asset.category
-            // Use displayAmount which prioritizes currentAmount over amount
+            // Use amount directly (single source of truth)
             self.amount = String(describing: asset.displayAmount)
             self.currency = Currency(rawValue: asset.currency) ?? .CNY
             self.date = asset.purchaseDate
@@ -198,15 +198,13 @@ class AddEditViewModel {
             let update = AssetUpdate(
                 name: name.trimmingCharacters(in: .whitespaces),
                 category: selectedAssetCategory,
-                amount: nil, // Don't update the original amount
+                amount: amountValue, // Update the amount directly
                 currency: currency.rawValue,
                 purchaseDate: normalizeDate(date),
                 notes: notes.isEmpty ? nil : notes,
                 symbol: requiresStockFields ? symbol : nil,
                 shares: requiresStockFields ? Double(shares) : nil,
-                isMarketTracked: requiresStockFields ? isMarketTracked : nil,
-                currentAmount: amountValue, // Update currentAmount with the new value
-                originalAmount: nil
+                isMarketTracked: requiresStockFields ? isMarketTracked : nil
             )
             
             _ = try await assetService.updateAsset(
