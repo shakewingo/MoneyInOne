@@ -242,6 +242,7 @@ class APIService {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.cachePolicy = .reloadIgnoringLocalCacheData
         
         // Add additional headers
         headers?.forEach { key, value in
@@ -275,6 +276,7 @@ class APIService {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.cachePolicy = .reloadIgnoringLocalCacheData
         
         // Add additional headers
         headers?.forEach { key, value in

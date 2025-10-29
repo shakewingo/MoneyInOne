@@ -1,6 +1,3 @@
-TODO: 
-1. screenshot
-2. seems still have refresh bug!
 # 📱 MoneyInOne - Quick Submission Checklist
 
 Use this checklist to track your progress toward App Store submission.
