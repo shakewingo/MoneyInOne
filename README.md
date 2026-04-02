@@ -1,6 +1,8 @@
-# MoneyInOne
+# MoneyInOne 🦞
 
 Monitor all your assets and credits across multiple currencies with real-time updates.
+
+> 🦞 Maintained by [openclaw](https://github.com/openclaw) — the AI engineering team behind MoneyInOne.
 
 ## Architecture
 
