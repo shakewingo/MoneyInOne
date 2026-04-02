@@ -210,19 +210,16 @@ class MarketDataService:
             return False, None, None
 
         # Fetch market price based on asset category
-        price_fetchers = {
-            "stock": self.get_stock_price,
-            "crypto": self.get_crypto_price,
-            "gold": self.get_stock_price,
-            "silver": self.get_stock_price,
-        }
-
-        fetch_func = price_fetchers.get(category)
-        if not fetch_func:
+        if category == "stock":
+            market_price = await self.get_stock_price(symbol)
+        elif category == "crypto":
+            market_price = await self.get_crypto_price(symbol)  # handles BTC → BTC-USD internally
+        elif category in ("gold", "silver"):
+            market_price = await self.get_commodity_price(category)  # uses GC=F / SI=F
+        else:
             logger.warning(f"Unsupported asset category: {category}")
             return False, None, None
 
-        market_price = await fetch_func(symbol)
         if not market_price:
             return False, None, None
 

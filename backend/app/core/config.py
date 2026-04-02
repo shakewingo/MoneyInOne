@@ -31,13 +31,13 @@ class Settings(BaseSettings):
         description="Redis connection URL"
     )
     
-    # Caching (increased TTL to reduce API calls)
+    # Caching
     cache_ttl_exchange_rates: int = Field(
-        default=3600*24,  # 24 hours
+        default=3600*6,  # 6 hours (FX rates move slowly)
         description="Exchange rates cache TTL in seconds"
     )
     cache_ttl_market_prices: int = Field(
-        default=3600*24,  # 24 hours
+        default=900,  # 15 minutes (market prices should be reasonably fresh)
         description="Asset prices cache TTL in seconds"
     )
     
