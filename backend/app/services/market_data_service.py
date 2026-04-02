@@ -84,7 +84,7 @@ class MarketDataService:
         return await loop.run_in_executor(None, self._fetch_yfinance_price, symbol)
 
     async def _get_with_cache(
-        self, cache_key: str, fetch_func, *args, ttl: int = None
+        self, cache_key: str, fetch_func, *args, ttl: int = None, force_refresh: bool = False
     ) -> Optional[Decimal]:
         """
         Generic method to get price with caching.
@@ -94,15 +94,17 @@ class MarketDataService:
             fetch_func: Async function to fetch data if not cached
             *args: Arguments to pass to fetch_func
             ttl: Cache TTL in seconds (defaults to market prices TTL)
+            force_refresh: If True, bypass cache and fetch fresh data
 
         Returns:
             Price as Decimal, or None if failed
         """
-        # Try cache first
-        cached_price = await self._get_cached_price(cache_key)
-        if cached_price:
-            logger.debug(f"Cache hit for {cache_key}")
-            return cached_price
+        # Try cache first (unless force_refresh)
+        if not force_refresh:
+            cached_price = await self._get_cached_price(cache_key)
+            if cached_price:
+                logger.debug(f"Cache hit for {cache_key}")
+                return cached_price
 
         # Fetch from API
         price = await fetch_func(*args)
@@ -112,82 +114,59 @@ class MarketDataService:
 
         return price
 
-    async def get_stock_price(self, symbol: str) -> Optional[Decimal]:
-        """
-        Get stock price with caching.
+    async def flush_price_cache(self, symbol: str, category: str) -> None:
+        """Flush cached price entries for a given asset symbol/category."""
+        if not self.redis_client:
+            return
+        keys = [
+            f"stock_price:{symbol}",
+            f"crypto_price:{symbol}",
+            f"commodity_price:{category}",
+        ]
+        for key in keys:
+            try:
+                await self.redis_client.delete(key)
+                logger.info(f"Flushed cache key: {key}")
+            except Exception as e:
+                logger.warning(f"Failed to flush cache key {key}: {e}")
 
-        Args:
-            symbol: Stock symbol (e.g., 'AAPL', 'TSLA')
-
-        Returns:
-            Current stock price as Decimal, or None if failed
-        """
+    async def get_stock_price(self, symbol: str, force_refresh: bool = False) -> Optional[Decimal]:
+        """Get stock price with caching. symbol e.g. 'AAPL', 'GLD'"""
         return await self._get_with_cache(
-            f"stock_price:{symbol}", self._fetch_price, symbol
+            f"stock_price:{symbol}", self._fetch_price, symbol, force_refresh=force_refresh
         )
 
-    async def get_crypto_price(self, symbol: str) -> Optional[Decimal]:
-        """
-        Get crypto price in USD with caching.
-
-        Args:
-            symbol: Crypto symbol (e.g., 'BTC', 'ETH')
-
-        Returns:
-            Current crypto price in USD as Decimal, or None if failed
-        """
+    async def get_crypto_price(self, symbol: str, force_refresh: bool = False) -> Optional[Decimal]:
+        """Get crypto price in USD with caching. symbol e.g. 'BTC', 'ETH' (appends -USD internally)"""
         yf_symbol = f"{symbol}-USD"
         return await self._get_with_cache(
-            f"crypto_price:{symbol}", self._fetch_price, yf_symbol
+            f"crypto_price:{symbol}", self._fetch_price, yf_symbol, force_refresh=force_refresh
         )
 
-    async def get_commodity_price(self, commodity: str) -> Optional[Decimal]:
-        """
-        Get commodity price (gold, silver) in USD with caching.
-
-        Uses yfinance futures symbols:
-        - Gold: GC=F
-        - Silver: SI=F
-
-        Args:
-            commodity: Commodity name ('gold' or 'silver')
-
-        Returns:
-            Current commodity price in USD as Decimal, or None if failed
-        """
+    async def get_commodity_price(self, commodity: str, force_refresh: bool = False) -> Optional[Decimal]:
+        """Get commodity price in USD. commodity: 'gold' → GC=F, 'silver' → SI=F"""
         commodity_symbols = {"gold": "GC=F", "silver": "SI=F"}
-
         symbol = commodity_symbols.get(commodity.lower())
         if not symbol:
             logger.warning(f"Unsupported commodity: {commodity}")
             return None
-
         return await self._get_with_cache(
-            f"commodity_price:{commodity}", self._fetch_price, symbol
+            f"commodity_price:{commodity}", self._fetch_price, symbol, force_refresh=force_refresh
         )
 
     async def get_exchange_rate(
-        self, from_currency: str, to_currency: str
+        self, from_currency: str, to_currency: str, force_refresh: bool = False
     ) -> Optional[Decimal]:
-        """
-        Get exchange rate between currencies with caching.
-
-        Args:
-            from_currency: Source currency code (e.g., 'EUR', 'CNY')
-            to_currency: Target currency code (e.g., 'USD')
-
-        Returns:
-            Exchange rate as Decimal, or None if failed
-        """
+        """Get exchange rate between currencies with caching."""
         if from_currency == to_currency:
             return Decimal("1.0")
-
         yf_symbol = f"{from_currency}{to_currency}=X"
         return await self._get_with_cache(
             f"exchange_rate:{from_currency}_{to_currency}",
             self._fetch_price,
             yf_symbol,
             ttl=settings.cache_ttl_exchange_rates,
+            force_refresh=force_refresh,
         )
 
     async def update_asset_price(
@@ -209,13 +188,19 @@ class MarketDataService:
         if not symbol:
             return False, None, None
 
-        # Fetch market price based on asset category
+        # Fetch market price based on asset category — always force_refresh to bypass stale cache
+        COMMODITY_SYMBOLS = {"gold": "GC=F", "silver": "SI=F"}
         if category == "stock":
-            market_price = await self.get_stock_price(symbol)
+            market_price = await self.get_stock_price(symbol, force_refresh=True)
         elif category == "crypto":
-            market_price = await self.get_crypto_price(symbol)  # handles BTC → BTC-USD internally
+            market_price = await self.get_crypto_price(symbol, force_refresh=True)
         elif category in ("gold", "silver"):
-            market_price = await self.get_commodity_price(category)  # uses GC=F / SI=F
+            if symbol and symbol.upper() != COMMODITY_SYMBOLS.get(category, "").upper():
+                # Symbol is an ETF/stock proxy (e.g. GLD, IAU) — fetch as stock
+                market_price = await self.get_stock_price(symbol, force_refresh=True)
+            else:
+                # No custom symbol — use futures (GC=F / SI=F)
+                market_price = await self.get_commodity_price(category, force_refresh=True)
         else:
             logger.warning(f"Unsupported asset category: {category}")
             return False, None, None
