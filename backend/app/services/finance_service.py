@@ -700,7 +700,7 @@ class FinanceService:
         category = getattr(item, "category", None)
         is_market_tracked = getattr(item, "is_market_tracked", None)
 
-        if is_market_tracked and symbol and shares and category in {"stock", "crypto", "gold", "silver"}:
+        if is_market_tracked and shares and category in {"stock", "crypto", "gold", "silver"}:
             try:
                 async with MarketDataService() as market_service:
                     if category == "stock":
@@ -708,7 +708,8 @@ class FinanceService:
                     elif category == "crypto":
                         price = await market_service.get_crypto_price(symbol)
                     elif category in {"gold", "silver"}:
-                        price = await market_service.get_stock_price(category)
+                        # Always use XAU/XAG spot price (GC=F / SI=F) — same logic as refresh
+                        price = await market_service.get_commodity_price(category)
                     else:
                         price = None
 
