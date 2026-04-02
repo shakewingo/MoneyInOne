@@ -1,0 +1,16 @@
+MoneyInOne is your personal wealth dashboard — track all your assets and liabilities across multiple currencies in one clean, modern app.
+
+FEATURES
+• Track stocks, crypto, gold, real estate, cash and more
+• Real-time market prices for stocks, crypto and gold (XAU/USD)
+• Multi-currency support with live exchange rates
+• Net worth calculation across all your holdings
+• Credits and liabilities tracking (loans, credit cards, mortgage)
+• Clean dashboard with category breakdowns
+• Works on iPhone and iPad
+
+HOW IT WORKS
+Add your assets and credits once. MoneyInOne fetches live market prices automatically and converts everything to your base currency, giving you an up-to-date picture of your net worth at a glance.
+
+PRIVACY
+Your data is stored privately and associated only with your device. No account or sign-in required.

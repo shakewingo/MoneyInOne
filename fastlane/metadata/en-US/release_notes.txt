@@ -1,0 +1,6 @@
+Initial release of MoneyInOne.
+
+• Track all your assets and credits in one place
+• Real-time prices for stocks, crypto and gold
+• Multi-currency support with live exchange rates
+• Clean dashboard with net worth summary

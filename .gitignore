@@ -11,3 +11,7 @@ backend/.env
 
 # Docker volumes
 redis_data/
+# Fastlane credentials
+.env.fastlane
+*.p8
+build/

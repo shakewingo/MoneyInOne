@@ -1,0 +1,4 @@
+app_identifier "shakewingo.MoneyInOne"
+apple_id ENV["APPLE_ID"]          # your Apple ID email — set in .env.fastlane
+itc_team_id ENV["ITC_TEAM_ID"]    # App Store Connect team ID
+team_id "F53W3K3ZVU"              # Developer Portal team ID

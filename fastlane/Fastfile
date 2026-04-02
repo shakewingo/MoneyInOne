@@ -1,0 +1,80 @@
+default_platform(:ios)
+
+platform :ios do
+
+  # ─── One-command full release ────────────────────────────────────────────────
+  # Usage: bundle exec fastlane release
+  # Builds, uploads IPA, pushes metadata + screenshots, submits for review.
+  desc "Build, upload and submit MoneyInOne to App Store"
+  lane :release do
+    # 1. Authenticate via API key (no 2FA prompts)
+    app_store_connect_api_key(
+      key_id:        ENV["ASC_KEY_ID"],
+      issuer_id:     ENV["ASC_ISSUER_ID"],
+      key_filepath:  ENV["ASC_KEY_FILEPATH"],
+      duration:      1200,
+      in_house:      false,
+    )
+
+    # 2. Sync signing certificates & provisioning profiles (read-only)
+    sync_code_signing(
+      type: "appstore",
+      app_identifier: "shakewingo.MoneyInOne",
+      readonly: true,
+    )
+
+    # 3. Bump build number to current timestamp (avoids duplicates)
+    increment_build_number(
+      build_number: Time.now.strftime("%Y%m%d%H%M"),
+      xcodeproj: "frontend/MoneyInOne/MoneyInOne.xcodeproj",
+    )
+
+    # 4. Build the IPA
+    build_app(
+      scheme: "MoneyInOne",
+      workspace: nil,
+      project: "frontend/MoneyInOne/MoneyInOne.xcodeproj",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "./build",
+      output_name: "MoneyInOne.ipa",
+      clean: true,
+    )
+
+    # 5. Upload to App Store Connect + metadata + screenshots + submit for review
+    upload_to_app_store(
+      force: true,                      # skip HTML verification
+      submit_for_review: true,
+      automatic_release: false,         # you manually release after approval
+      submission_information: {
+        add_id_info_uses_idfa: false,   # no ad tracking
+      },
+      metadata_path: "./fastlane/metadata",
+      screenshots_path: "./fastlane/screenshots",
+      overwrite_screenshots: true,
+      skip_binary_upload: false,
+      precheck_include_in_app_purchases: false,
+    )
+  end
+
+  # ─── Metadata only (no build) ────────────────────────────────────────────────
+  # Usage: bundle exec fastlane metadata_only
+  desc "Push only metadata and screenshots (no build/upload)"
+  lane :metadata_only do
+    app_store_connect_api_key(
+      key_id:        ENV["ASC_KEY_ID"],
+      issuer_id:     ENV["ASC_ISSUER_ID"],
+      key_filepath:  ENV["ASC_KEY_FILEPATH"],
+    )
+    upload_to_app_store(
+      force: true,
+      skip_binary_upload: true,
+      skip_screenshots: false,
+      overwrite_screenshots: true,
+      metadata_path: "./fastlane/metadata",
+      screenshots_path: "./fastlane/screenshots",
+      submit_for_review: false,
+    )
+  end
+
+end
