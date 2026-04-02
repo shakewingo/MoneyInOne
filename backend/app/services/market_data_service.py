@@ -189,18 +189,15 @@ class MarketDataService:
             return False, None, None
 
         # Fetch market price based on asset category — always force_refresh to bypass stale cache
-        COMMODITY_SYMBOLS = {"gold": "GC=F", "silver": "SI=F"}
         if category == "stock":
             market_price = await self.get_stock_price(symbol, force_refresh=True)
         elif category == "crypto":
             market_price = await self.get_crypto_price(symbol, force_refresh=True)
         elif category in ("gold", "silver"):
-            if symbol and symbol.upper() != COMMODITY_SYMBOLS.get(category, "").upper():
-                # Symbol is an ETF/stock proxy (e.g. GLD, IAU) — fetch as stock
-                market_price = await self.get_stock_price(symbol, force_refresh=True)
-            else:
-                # No custom symbol — use futures (GC=F / SI=F)
-                market_price = await self.get_commodity_price(category, force_refresh=True)
+            # Always use XAU/XAG spot price (via futures proxy) for gold/silver category.
+            # The asset's symbol field is treated as a label/quantity unit (oz), not a ticker.
+            # GC=F = COMEX gold futures, tracks XAU/USD spot within ~0.5% — acceptable for personal finance.
+            market_price = await self.get_commodity_price(category, force_refresh=True)
         else:
             logger.warning(f"Unsupported asset category: {category}")
             return False, None, None
