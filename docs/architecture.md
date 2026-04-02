@@ -26,7 +26,7 @@ flowchart LR
     subgraph Data_Infra[Data & Infra]
         DB[(SQLite/PostgreSQL)]
         Cache[(Redis)]
-        ExtAPI[[Alpha Vantage API]]
+        ExtAPI[[Yahoo Finance (yfinance)]]
         Docker[(docker-compose)]
         Core --> DB
         MarketDataService[MarketDataService] --> Cache
@@ -72,7 +72,7 @@ flowchart TD
     Market --> Config
     Market --> DB
     Market --> Redis[(Redis cache)]
-    Market --> Alpha[[Alpha Vantage]]
+    Market --> Alpha[[Yahoo Finance (yfinance)]]
 
     Config --> FastAPI
     Config --> DB
@@ -101,7 +101,7 @@ flowchart TD
     K --> L[FinanceService -> MarketDataService]
     L --> M[Redis cache hit?]
     M -->|Yes| N[Use cached prices]
-    M -->|No| O[Call Alpha Vantage]
+    M -->|No| O[Call Yahoo Finance (yfinance)]
     O --> P[Cache prices in Redis]
     N --> Q[Update current amounts in DB]
     P --> Q
@@ -125,7 +125,7 @@ sequenceDiagram
     participant F as FinanceService
     participant M as MarketDataService
     participant C as Redis
-    participant X as Alpha Vantage
+    participant X as Yahoo Finance (yfinance)
     participant D as DB
 
     U->>V: Tap "Refresh Prices"
@@ -161,7 +161,7 @@ sequenceDiagram
     participant M as MarketDataService
     participant D as DB
     participant C as Redis
-    participant X as Alpha Vantage
+    participant X as Yahoo Finance (yfinance)
 
     U->>V: Open Dashboard / Summary
     V->>A: GET /portfolio/summary?base_currency=USD

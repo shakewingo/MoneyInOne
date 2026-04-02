@@ -31,20 +31,6 @@ class Settings(BaseSettings):
         description="Redis connection URL"
     )
     
-    # External APIs
-    alpha_vantage_api_key: str = Field(
-        default="JJZ0GGL8ZMCGIME9",  # Replace with your API key
-        description="Alpha Vantage API key"
-    )
-    alpha_vantage_base_url: str = Field(
-        default="https://www.alphavantage.co/query",
-        description="Alpha Vantage API base URL"
-    )
-    alpha_vantage_timeout: int = Field(
-        default=10,
-        description="Alpha Vantage API timeout in seconds"
-    )
-    
     # Caching (increased TTL to reduce API calls)
     cache_ttl_exchange_rates: int = Field(
         default=3600*24,  # 24 hours

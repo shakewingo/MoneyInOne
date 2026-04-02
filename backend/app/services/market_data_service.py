@@ -1,11 +1,11 @@
-"""Market data service for real-time price fetching and caching using Alpha Vantage API."""
+"""Market data service for real-time price fetching and caching using yfinance (Yahoo Finance)."""
 
 import asyncio
 import logging
 from decimal import Decimal
 from typing import Dict, List, Optional, Tuple
 
-import aiohttp
+import yfinance as yf
 import redis.asyncio as redis
 from app.core.config import settings
 
@@ -13,12 +13,11 @@ logger = logging.getLogger(__name__)
 
 
 class MarketDataService:
-    """Service for fetching and caching real-time market data using Alpha Vantage."""
+    """Service for fetching and caching real-time market data using yfinance."""
 
     def __init__(self):
         """Initialize the market data service."""
         self.redis_client: Optional[redis.Redis] = None
-        self.session: Optional[aiohttp.ClientSession] = None
 
     async def __aenter__(self):
         """Async context manager entry."""
@@ -30,7 +29,7 @@ class MarketDataService:
         await self._close_connections()
 
     async def _init_connections(self):
-        """Initialize Redis and HTTP connections."""
+        """Initialize Redis connection."""
         try:
             self.redis_client = redis.from_url(settings.redis_url)
             await self.redis_client.ping()
@@ -39,16 +38,10 @@ class MarketDataService:
             logger.warning(f"Redis connection failed: {e}. Proceeding without cache.")
             self.redis_client = None
 
-        self.session = aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(total=settings.alpha_vantage_timeout)
-        )
-
     async def _close_connections(self):
         """Close all connections."""
         if self.redis_client:
             await self.redis_client.close()
-        if self.session:
-            await self.session.close()
 
     async def _get_cached_price(self, key: str) -> Optional[Decimal]:
         """Get cached price from Redis."""
@@ -70,97 +63,25 @@ class MarketDataService:
         except Exception as e:
             logger.warning(f"Cache write error for {key}: {e}")
 
-    async def _call_alpha_vantage(self, params: Dict[str, str]) -> Optional[Dict]:
-        """
-        Make API call to Alpha Vantage with error handling.
-
-        Args:
-            params: API parameters including function, symbol, and apikey
-
-        Returns:
-            JSON response data, or None if failed
-        """
-        if not self.session:
-            return None
-
+    def _fetch_yfinance_price(self, symbol: str) -> Optional[Decimal]:
+        """Synchronous yfinance price fetch. Run via executor to avoid blocking."""
         try:
-            async with self.session.get(
-                settings.alpha_vantage_base_url, params=params
-            ) as response:
-                if response.status != 200:
-                    logger.warning(
-                        f"Alpha Vantage API error: {response.status} for {params.get('function')}"
-                    )
-                    return None
-
-                data = await response.json()
-
-                # Check for rate limit
-                if "Note" in data:
-                    logger.warning(f"Alpha Vantage rate limit reached: {data.get('Note')}")
-                    return None
-
-                # Check for error messages
-                if "Error Message" in data:
-                    logger.error(
-                        f"Alpha Vantage error for {params.get('symbol', params.get('from_currency'))}: {data.get('Error Message')}"
-                    )
-                    return None
-
-                return data
-
+            ticker = yf.Ticker(symbol)
+            price = ticker.fast_info["lastPrice"]
+            if price is None:
+                logger.warning(f"No price returned from yfinance for {symbol}")
+                return None
+            result = Decimal(str(price))
+            logger.info(f"Fetched price for {symbol}: {result}")
+            return result
         except Exception as e:
-            logger.error(f"Error calling Alpha Vantage API: {e}")
+            logger.error(f"yfinance error fetching {symbol}: {e}")
             return None
 
-    async def _fetch_stock_price(self, symbol: str) -> Optional[Decimal]:
-        """Fetch stock price from Alpha Vantage."""
-        params = {
-            "function": "GLOBAL_QUOTE",
-            "symbol": symbol,
-            "apikey": settings.alpha_vantage_api_key,
-        }
-
-        data = await self._call_alpha_vantage(params)
-        if not data:
-            return None
-
-        quote = data.get("Global Quote", {})
-        price_str = quote.get("05. price")
-
-        if price_str:
-            price = Decimal(price_str)
-            logger.info(f"Fetched stock price for {symbol}: {price}")
-            return price
-
-        logger.warning(f"No price data found for {symbol}")
-        return None
-
-    async def _fetch_exchange_rate(
-        self, from_currency: str, to_currency: str
-    ) -> Optional[Decimal]:
-        """Fetch exchange rate from Alpha Vantage (also works for crypto and commodities except previous metal)."""
-        params = {
-            "function": "CURRENCY_EXCHANGE_RATE",
-            "from_currency": from_currency,
-            "to_currency": to_currency,
-            "apikey": settings.alpha_vantage_api_key,
-        }
-
-        data = await self._call_alpha_vantage(params)
-        if not data:
-            return None
-
-        exchange_data = data.get("Realtime Currency Exchange Rate", {})
-        rate_str = exchange_data.get("5. Exchange Rate")
-
-        if rate_str:
-            rate = Decimal(rate_str)
-            logger.info(f"Fetched exchange rate {from_currency}/{to_currency}: {rate}")
-            return rate
-
-        logger.warning(f"No exchange rate found for {from_currency}/{to_currency}")
-        return None
+    async def _fetch_price(self, symbol: str) -> Optional[Decimal]:
+        """Async wrapper around yfinance price fetch."""
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, self._fetch_yfinance_price, symbol)
 
     async def _get_with_cache(
         self, cache_key: str, fetch_func, *args, ttl: int = None
@@ -202,7 +123,7 @@ class MarketDataService:
             Current stock price as Decimal, or None if failed
         """
         return await self._get_with_cache(
-            f"stock_price:{symbol}", self._fetch_stock_price, symbol
+            f"stock_price:{symbol}", self._fetch_price, symbol
         )
 
     async def get_crypto_price(self, symbol: str) -> Optional[Decimal]:
@@ -215,25 +136,26 @@ class MarketDataService:
         Returns:
             Current crypto price in USD as Decimal, or None if failed
         """
+        yf_symbol = f"{symbol}-USD"
         return await self._get_with_cache(
-            f"crypto_price:{symbol}", self._fetch_exchange_rate, symbol, "USD"
+            f"crypto_price:{symbol}", self._fetch_price, yf_symbol
         )
 
     async def get_commodity_price(self, commodity: str) -> Optional[Decimal]:
         """
         Get commodity price (gold, silver) in USD with caching.
 
-        Alpha Vantage treats precious metals as currencies:
-        - Gold: XAU
-        - Silver: XAG
+        Uses yfinance futures symbols:
+        - Gold: GC=F
+        - Silver: SI=F
 
         Args:
             commodity: Commodity name ('gold' or 'silver')
 
         Returns:
-            Current commodity price in USD per troy ounce as Decimal, or None if failed
+            Current commodity price in USD as Decimal, or None if failed
         """
-        commodity_symbols = {"gold": "XAU", "silver": "XAG"}
+        commodity_symbols = {"gold": "GC=F", "silver": "SI=F"}
 
         symbol = commodity_symbols.get(commodity.lower())
         if not symbol:
@@ -241,7 +163,7 @@ class MarketDataService:
             return None
 
         return await self._get_with_cache(
-            f"commodity_price:{commodity}", self._fetch_exchange_rate, symbol, "USD"
+            f"commodity_price:{commodity}", self._fetch_price, symbol
         )
 
     async def get_exchange_rate(
@@ -260,11 +182,11 @@ class MarketDataService:
         if from_currency == to_currency:
             return Decimal("1.0")
 
+        yf_symbol = f"{from_currency}{to_currency}=X"
         return await self._get_with_cache(
             f"exchange_rate:{from_currency}_{to_currency}",
-            self._fetch_exchange_rate,
-            from_currency,
-            to_currency,
+            self._fetch_price,
+            yf_symbol,
             ttl=settings.cache_ttl_exchange_rates,
         )
 
@@ -283,7 +205,6 @@ class MarketDataService:
         category = asset_data.get("category")
         symbol = asset_data.get("symbol")
         shares = asset_data.get("shares", 1)
-        currency = asset_data.get("currency")
 
         if not symbol:
             return False, None, None
