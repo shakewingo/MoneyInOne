@@ -39,21 +39,23 @@ platform :ios do
       output_directory: "./build",
       output_name: "MoneyInOne.ipa",
       clean: true,
+      xcargs: "CODE_SIGN_STYLE=Manual PROVISIONING_PROFILE_SPECIFIER='match AppStore shakewingo.MoneyInOne' CODE_SIGN_IDENTITY='Apple Distribution'",
     )
 
     # 5. Upload to App Store Connect + metadata + screenshots + submit for review
     upload_to_app_store(
       force: true,                      # skip HTML verification
-      submit_for_review: true,
+      submit_for_review: false,
       automatic_release: false,         # you manually release after approval
       submission_information: {
-        add_id_info_uses_idfa: false,   # no ad tracking
+        add_id_info_uses_idfa: false,
+        export_compliance_uses_encryption: false,
       },
       metadata_path: "./fastlane/metadata",
-      screenshots_path: "./fastlane/screenshots",
-      overwrite_screenshots: true,
-      skip_binary_upload: false,
+      skip_screenshots: true,
+      skip_binary_upload: true,
       precheck_include_in_app_purchases: false,
+      run_precheck_before_submit: false,
     )
   end
 
