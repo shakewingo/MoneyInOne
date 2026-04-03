@@ -52,8 +52,10 @@ platform :ios do
         export_compliance_uses_encryption: false,
       },
       metadata_path: "./fastlane/metadata",
-      skip_screenshots: true,
-      skip_binary_upload: true,
+      screenshots_path: "./fastlane/screenshots",
+      skip_screenshots: false,
+      overwrite_screenshots: true,
+      skip_binary_upload: false,
       precheck_include_in_app_purchases: false,
       run_precheck_before_submit: false,
     )
@@ -76,6 +78,7 @@ platform :ios do
       metadata_path: "./fastlane/metadata",
       screenshots_path: "./fastlane/screenshots",
       submit_for_review: false,
+      precheck_include_in_app_purchases: false,
     )
   end
 
