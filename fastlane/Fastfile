@@ -61,6 +61,31 @@ platform :ios do
     )
   end
 
+  # ─── Submit for review (no build/upload) ──────────────────────────────────────
+  # Usage: bundle exec fastlane submit
+  desc "Submit current version for App Store review"
+  lane :submit do
+    app_store_connect_api_key(
+      key_id:        ENV["ASC_KEY_ID"],
+      issuer_id:     ENV["ASC_ISSUER_ID"],
+      key_filepath:  ENV["ASC_KEY_FILEPATH"],
+    )
+    upload_to_app_store(
+      force: true,
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      skip_metadata: true,
+      submit_for_review: true,
+      automatic_release: false,
+      submission_information: {
+        add_id_info_uses_idfa: false,
+        export_compliance_uses_encryption: false,
+      },
+      precheck_include_in_app_purchases: false,
+      run_precheck_before_submit: false,
+    )
+  end
+
   # ─── Metadata only (no build) ────────────────────────────────────────────────
   # Usage: bundle exec fastlane metadata_only
   desc "Push only metadata and screenshots (no build/upload)"
