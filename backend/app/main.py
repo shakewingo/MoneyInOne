@@ -54,8 +54,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 # Create FastAPI application
-# redirect_slashes=False prevents HTTP 307 redirects from /assets -> /assets/
-# which would downgrade HTTPS to HTTP and be blocked by iOS ATS
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,

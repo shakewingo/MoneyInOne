@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+@router.post("", response_model=SuccessResponse)
 @router.post("/", response_model=SuccessResponse)
 async def create_credit(
     credit_data: CreditCreate,
@@ -43,6 +44,7 @@ async def create_credit(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("", response_model=Dict[str, CreditCategoryBreakdown])
 @router.get("/", response_model=Dict[str, CreditCategoryBreakdown])
 async def get_credits_grouped(
     device_id: str = Query(..., description="Device identifier"),
