@@ -1,1 +1,1 @@
-https://shakewingo.github.io/MoneyInOne/docs/privacy-policy.html
+https://github.com/shakewingo/MoneyInOne/blob/main/docs/privacy.md
